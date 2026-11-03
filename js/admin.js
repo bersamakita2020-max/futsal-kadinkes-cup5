@@ -91,9 +91,26 @@
     );
   }
 
+  function listRoot() {
+    // v1.0.6+ = #adminList; cache lama / HTML lama = #adminRows
+    return $('#adminList') || $('#adminRows');
+  }
+
+  function showAdminError(msg) {
+    const el = $('#adminMsg');
+    if (!el) { console.error(msg); return; }
+    el.hidden = false;
+    el.className = 'alert alert-err';
+    el.textContent = msg;
+  }
+
   function render() {
     const list = filtered();
-    const box = $('#adminList');
+    const box = listRoot();
+    if (!box) {
+      showAdminError('Elemen daftar admin (#adminList / #adminRows) tidak ditemukan. Hard-refresh (Ctrl+F5) atau bersihkan cache browser.');
+      return;
+    }
     if (!list.length) {
       box.innerHTML = '<div class="empty">Tidak ada data sesuai filter.</div>';
       return;
@@ -467,17 +484,21 @@
   }
 
   async function refresh() {
-    const res = await FutsalAPI.post('adminList', { token });
-    teams = (res.teams || []).map(t => t._contoh ? enrichDemoAdmin(t) : t);
-    // demo adminList returns FUTSAL_DEMO teams — enrich
-    if (FutsalAPI.isDemo()) teams = teams.map(enrichDemoAdmin);
-    render();
+    try {
+      const res = await FutsalAPI.post('adminList', { token });
+      teams = (res.teams || []).map(t => t._contoh ? enrichDemoAdmin(t) : t);
+      if (FutsalAPI.isDemo()) teams = teams.map(enrichDemoAdmin);
+      render();
+    } catch (err) {
+      showAdminError(err.message || String(err));
+      throw err;
+    }
   }
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.6';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.7';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;
