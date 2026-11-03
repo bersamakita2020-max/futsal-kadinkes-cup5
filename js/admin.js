@@ -18,6 +18,7 @@
 
   function jenisLabel(j) {
     if (j === 'RS') return 'Rumah Sakit';
+    if (j === 'Labkesda') return 'Labkesda';
     if (j === 'BPJS') return 'BPJS';
     if (j === 'DP3AP2KB') return 'DP3AP2KB';
     return j || 'Puskesmas';

@@ -580,3 +580,5 @@ table.data tr:hover td { background: rgba(26,166,160,.05); }
 @media (max-width: 400px) {
   .gallery-kepala { grid-template-columns: minmax(0, 1fr); }
 }
+
+.badge-labkesda { background: rgba(14, 116, 144, .14); color: #0e7490; }

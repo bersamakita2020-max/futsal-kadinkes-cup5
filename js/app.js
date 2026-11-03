@@ -8,12 +8,14 @@
 
   function jenisLabel(j) {
     if (j === 'RS') return 'Rumah Sakit';
+    if (j === 'Labkesda') return 'Labkesda';
     if (j === 'BPJS') return 'BPJS';
     if (j === 'DP3AP2KB') return 'DP3AP2KB';
     return 'Puskesmas';
   }
   function jenisBadgeClass(j) {
     if (j === 'RS') return 'badge-rs';
+    if (j === 'Labkesda') return 'badge-labkesda';
     if (j === 'BPJS') return 'badge-bpjs';
     if (j === 'DP3AP2KB') return 'badge-dp3';
     return 'badge-pk';
@@ -150,6 +152,7 @@
       $('#statTotal').textContent = s.total != null ? s.total : '—';
       $('#statPk').textContent = s.puskesmas != null ? s.puskesmas : '—';
       $('#statRs').textContent = s.rs != null ? s.rs : '—';
+      const sl = $('#statLabkesda'); if (sl) sl.textContent = s.labkesda != null ? s.labkesda : '—';
       const sb = $('#statBpjs'); if (sb) sb.textContent = s.bpjs != null ? s.bpjs : '—';
       const sd = $('#statDp3'); if (sd) sd.textContent = s.dp3ap2kb != null ? s.dp3ap2kb : '—';
       $('#statKit').textContent = s.kitLengkap != null ? s.kitLengkap : '—';
@@ -599,7 +602,7 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.4';
+    $('#versiLabel').textContent = C.VERSI || '1.0.5';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);

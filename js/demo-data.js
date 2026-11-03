@@ -1,14 +1,15 @@
 /** Data CONTOH — Kit Faskes Peserta (jelas berlabel contoh). v1.0.4 multi-kepala */
 window.FUTSAL_DEMO = {
   stats: {
-    total: 5,
+    total: 6,
     puskesmas: 2,
     rs: 1,
+    labkesda: 1,
     bpjs: 1,
     dp3ap2kb: 1,
-    verified: 3,
+    verified: 4,
     pending: 2,
-    kitLengkap: 3,
+    kitLengkap: 4,
     kitBelum: 2,
     timGabungan: 1
   },
@@ -137,6 +138,31 @@ window.FUTSAL_DEMO = {
       kontakWA: '081355566677',
       kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: false, jerseyCadangan: false, lengkap: false, persen: 75, jumlahKepala: 1 },
       createdAt: '2026-10-29T11:00:00+07:00',
+      _contoh: true
+    },
+    {
+      id: 'DEMO-006',
+      status: 'verified',
+      jenisInstansi: 'Labkesda',
+      namaInstansi: 'Labkesda CONTOH Kabupaten Sintang',
+      namaTim: 'Labkesda CONTOH FC',
+      namaKapten: 'Maya CONTOH',
+      fotoKaptenUrl: 'assets/hkn62_sm.png',
+      namaKepala: 'Kepala Labkesda CONTOH',
+      fotoKepalaUrl: 'assets/sintang_sm.png',
+      kepala: [
+        { nama: 'Kepala Labkesda CONTOH', instansi: 'Labkesda Kab. Sintang', fotoUrl: 'assets/sintang_sm.png', fileId: '' }
+      ],
+      timGabungan: false,
+      anggotaFaskes: '',
+      logoUrl: 'assets/hkn62_sm.png',
+      jerseyUtamaUrl: 'assets/kc5_h_sm.png',
+      jerseyCadanganUrl: '',
+      warnaJersey: 'Cyan & Putih',
+      kontakNama: 'Nia CONTOH',
+      kontakWA: '081377788899',
+      kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: true, jerseyCadangan: false, lengkap: true, persen: 100, jumlahKepala: 1 },
+      createdAt: '2026-10-30T13:00:00+07:00',
       _contoh: true
     }
   ]
