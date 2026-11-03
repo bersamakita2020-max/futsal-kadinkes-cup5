@@ -9,6 +9,11 @@
   let lightboxCtx = null;
   let hapusTarget = null;
   let adminTab = 'aktif';
+  let editTarget = null;
+  let editUploads = {};
+  let editRemove = {};
+  let aeKepalaCount = 0;
+  const AE_MAX_KEPALA = 5;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -320,6 +325,7 @@
           '</div>' +
           '<div class="admin-card-actions">' +
             '<button type="button" class="btn btn-navy" data-preview>Preview Kit</button>' +
+            '<button type="button" class="btn btn-outline" data-edit>Edit</button>' +
             '<button type="button" class="btn btn-primary" data-act="verified">Kit OK</button>' +
             '<button type="button" class="btn btn-outline" data-act="pending">Tunda</button>' +
             '<button type="button" class="btn btn-danger" data-act="rejected">Tolak</button>' +
@@ -332,6 +338,9 @@
 
     box.querySelectorAll('[data-preview]').forEach(btn => {
       btn.onclick = () => openPreview(btn.closest('[data-id]').getAttribute('data-id'));
+    });
+    box.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.onclick = () => openEditModal(btn.closest('[data-id]').getAttribute('data-id'));
     });
     box.querySelectorAll('button[data-act]').forEach(btn => {
       btn.onclick = FutsalAPI.withBusy(btn, async () => {
@@ -873,10 +882,338 @@
     }
   }
 
+
+  function aeKepalaKey(idx) { return 'kepala_' + idx; }
+
+  function clearEditState() {
+    editUploads = {};
+    editRemove = {};
+    aeKepalaCount = 0;
+    editTarget = null;
+  }
+
+  function closeEditModal() {
+    const m = $('#editModal');
+    if (m) m.hidden = true;
+    clearEditState();
+  }
+
+  async function openEditModal(id) {
+    let t = teams.find(x => x.id === id);
+    if (!t) {
+      showAdminError('Tim tidak ditemukan.');
+      return;
+    }
+    // refresh detail from server for WA/catatan lengkap
+    try {
+      const res = await FutsalAPI.post('adminGetTeam', { token, id });
+      if (res && res.team) {
+        t = res.team;
+        const ix = teams.findIndex(x => x.id === id);
+        if (ix >= 0) teams[ix] = Object.assign({}, teams[ix], t);
+      }
+    } catch (_) {}
+
+    editTarget = t;
+    editUploads = {};
+    editRemove = {};
+    $('#aeId').value = t.id || '';
+    $('#editTitle').textContent = 'Edit: ' + (t.namaTim || t.id);
+    $('#aeJenis').value = t.jenisInstansi || '';
+    $('#aeNamaInstansi').value = t.namaInstansi || '';
+    $('#aeNamaTim').value = t.namaTim || '';
+    $('#aeKategori').value = normalizeKategori(t.kategoriTim) || '';
+    $('#aeNamaKapten').value = t.namaKapten || '';
+    $('#aeWarna').value = t.warnaJersey || '';
+    $('#aeKontakNama').value = t.kontakNama || '';
+    $('#aeKontakWA').value = t.kontakWA || '';
+    $('#aeStatus').value = t.status || 'pending';
+    $('#aeCatatan').value = t.catatan || '';
+    $('#aeCatatanAdmin').value = t.catatanAdmin || '';
+    $('#aeTimGabungan').checked = !!t.timGabungan;
+    $('#aeAnggotaFaskes').value = t.anggotaFaskes || '';
+    $('#aeAnggotaWrap').hidden = !$('#aeTimGabungan').checked;
+    $('#aePin').value = '';
+    const em = $('#editMsg');
+    if (em) { em.hidden = true; em.textContent = ''; }
+
+    const list = $('#aeKepalaList');
+    list.innerHTML = '';
+    aeKepalaCount = 0;
+    const kepala = Array.isArray(t.kepala) && t.kepala.length ? t.kepala : [{ nama: t.namaKepala || '', instansi: t.namaInstansi || '', fotoUrl: t.fotoKepalaUrl || '', fileId: t.fotoKepalaId || '' }];
+    kepala.slice(0, AE_MAX_KEPALA).forEach(kh => aeAddKepalaRow(kh));
+    if (!aeKepalaCount) aeAddKepalaRow();
+
+    renderAeImages(t);
+    $('#editModal').hidden = false;
+    setTimeout(() => { const el = $('#aeNamaTim'); if (el) el.focus(); }, 40);
+  }
+
+  function aeAddKepalaRow(kh) {
+    if (aeKepalaCount >= AE_MAX_KEPALA) return;
+    aeKepalaCount += 1;
+    const idx = aeKepalaCount;
+    const wrap = document.createElement('div');
+    wrap.className = 'ae-kepala-card';
+    wrap.dataset.kepalaIdx = String(idx);
+    wrap.innerHTML =
+      '<div class="kepala-card-top" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<strong>Pimpinan #' + idx + '</strong>' +
+        '<button type="button" class="btn-x" data-ae-remove-kepala aria-label="Hapus">×</button>' +
+      '</div>' +
+      '<div class="kepala-fields form-grid" style="grid-template-columns:1fr">' +
+        '<label class="field">Nama *<input type="text" data-ae-knama maxlength="80" required></label>' +
+        '<label class="field">Instansi asal *<input type="text" data-ae-kinstansi maxlength="120" required></label>' +
+      '</div>';
+    $('#aeKepalaList').appendChild(wrap);
+    if (kh) {
+      $('[data-ae-knama]', wrap).value = kh.nama || '';
+      $('[data-ae-kinstansi]', wrap).value = kh.instansi || '';
+      wrap._kepalaFoto = { fotoUrl: kh.fotoUrl || '', fileId: kh.fileId || '' };
+    } else {
+      wrap._kepalaFoto = { fotoUrl: '', fileId: '' };
+    }
+    $('[data-ae-remove-kepala]', wrap).onclick = () => {
+      if (aeKepalaCount <= 1) { alert('Minimal 1 kepala/pimpinan.'); return; }
+      const key = aeKepalaKey(idx);
+      delete editUploads[key];
+      delete editRemove[key];
+      wrap.remove();
+      aeRenumberKepala();
+      if (editTarget) renderAeImages(editTarget);
+    };
+    $('#aeBtnAddKepala').disabled = aeKepalaCount >= AE_MAX_KEPALA;
+  }
+
+  function aeRenumberKepala() {
+    const cards = $$('#aeKepalaList .ae-kepala-card');
+    aeKepalaCount = cards.length;
+    const remappedUploads = {};
+    const remappedRemove = {};
+    cards.forEach((card, i) => {
+      const n = i + 1;
+      const oldIdx = parseInt(card.dataset.kepalaIdx, 10);
+      const oldKey = aeKepalaKey(oldIdx);
+      const newKey = aeKepalaKey(n);
+      card.dataset.kepalaIdx = String(n);
+      const strong = $('.kepala-card-top strong', card);
+      if (strong) strong.textContent = 'Pimpinan #' + n;
+      if (editUploads[oldKey]) remappedUploads[newKey] = editUploads[oldKey];
+      if (editRemove[oldKey]) remappedRemove[newKey] = true;
+    });
+    // keep non-kepala uploads
+    Object.keys(editUploads).forEach(k => {
+      if (k.indexOf('kepala_') !== 0) remappedUploads[k] = editUploads[k];
+    });
+    Object.keys(editRemove).forEach(k => {
+      if (k.indexOf('kepala_') !== 0) remappedRemove[k] = true;
+    });
+    editUploads = remappedUploads;
+    editRemove = remappedRemove;
+    $('#aeBtnAddKepala').disabled = aeKepalaCount >= AE_MAX_KEPALA;
+  }
+
+  function aeCollectKepala() {
+    const cards = $$('#aeKepalaList .ae-kepala-card');
+    const kepala = [];
+    cards.forEach((card, i) => {
+      const n = i + 1;
+      const nama = String(($('[data-ae-knama]', card) && $('[data-ae-knama]', card).value) || '').trim();
+      const instansi = String(($('[data-ae-kinstansi]', card) && $('[data-ae-kinstansi]', card).value) || '').trim();
+      const prev = card._kepalaFoto || {};
+      const item = {
+        nama, instansi,
+        fotoUrl: editRemove[aeKepalaKey(n)] ? '' : (prev.fotoUrl || ''),
+        fileId: editRemove[aeKepalaKey(n)] ? '' : (prev.fileId || '')
+      };
+      kepala.push(item);
+    });
+    return kepala;
+  }
+
+  function currentImgUrl(t, key) {
+    if (editUploads[key] && editUploads[key].dataUrl) return editUploads[key].dataUrl;
+    if (editRemove[key]) return '';
+    if (key === 'logo') return t.logoUrl || (t.files && t.files.logo && t.files.logo.url) || '';
+    if (key === 'fotoKapten') return t.fotoKaptenUrl || '';
+    if (key === 'jerseyUtama') return t.jerseyUtamaUrl || '';
+    if (key === 'jerseyCadangan') return t.jerseyCadanganUrl || '';
+    if (key.indexOf('kepala_') === 0) {
+      const ix = parseInt(key.split('_')[1], 10) - 1;
+      const cards = $$('#aeKepalaList .ae-kepala-card');
+      const card = cards[ix];
+      if (card && card._kepalaFoto) return card._kepalaFoto.fotoUrl || '';
+      const kepala = Array.isArray(t.kepala) ? t.kepala : [];
+      return (kepala[ix] && kepala[ix].fotoUrl) || '';
+    }
+    return '';
+  }
+
+  function renderAeImages(t) {
+    const grid = $('#aeImgGrid');
+    if (!grid) return;
+    const slots = [
+      { key: 'logo', label: 'Logo *', optional: false },
+      { key: 'fotoKapten', label: 'Foto Kapten *', optional: false },
+      { key: 'jerseyUtama', label: 'Jersey Utama *', optional: false },
+      { key: 'jerseyCadangan', label: 'Jersey Cadangan', optional: true }
+    ];
+    const cards = $$('#aeKepalaList .ae-kepala-card');
+    cards.forEach((card, i) => {
+      slots.push({ key: aeKepalaKey(i + 1), label: 'Pimpinan #' + (i + 1), optional: true });
+    });
+    grid.innerHTML = slots.map(s => {
+      const url = currentImgUrl(t, s.key);
+      const thumb = url
+        ? '<img class="ae-thumb" alt="" src="' + esc(url) + '">'
+        : '<div class="ae-thumb-ph">Belum ada gambar</div>';
+      const hapusBtn = s.optional
+        ? '<button type="button" class="btn btn-outline" data-ae-hapus-img="' + esc(s.key) + '"' + (url ? '' : ' hidden') + '>Hapus gambar</button>'
+        : '';
+      return (
+        '<div class="ae-img" data-ae-img="' + esc(s.key) + '">' +
+          '<div class="ae-label">' + esc(s.label) + '</div>' +
+          thumb +
+          '<div class="ae-img-actions">' +
+            '<button type="button" class="btn btn-navy" data-ae-ganti="' + esc(s.key) + '">Ganti</button>' +
+            hapusBtn +
+          '</div>' +
+          '<input type="file" accept="image/jpeg,image/png,image/webp" hidden data-ae-file="' + esc(s.key) + '">' +
+        '</div>'
+      );
+    }).join('');
+
+    grid.querySelectorAll('[data-ae-ganti]').forEach(btn => {
+      btn.onclick = () => {
+        const key = btn.getAttribute('data-ae-ganti');
+        const input = grid.querySelector('[data-ae-file="' + key + '"]');
+        if (input) input.click();
+      };
+    });
+    grid.querySelectorAll('[data-ae-file]').forEach(inp => {
+      inp.onchange = async () => {
+        const key = inp.getAttribute('data-ae-file');
+        const file = inp.files && inp.files[0];
+        if (!file) return;
+        try {
+          const compressed = await FutsalAPI.compressImage(file);
+          editUploads[key] = {
+            dataUrl: compressed.dataUrl,
+            name: compressed.name || file.name,
+            mime: compressed.mime || file.type
+          };
+          delete editRemove[key];
+          if (key.indexOf('kepala_') === 0) {
+            const ix = parseInt(key.split('_')[1], 10) - 1;
+            const card = $$('#aeKepalaList .ae-kepala-card')[ix];
+            if (card) card._kepalaFoto = { fotoUrl: compressed.dataUrl, fileId: '' };
+          }
+          renderAeImages(editTarget || t);
+        } catch (e) {
+          alert(e.message || 'Gagal membaca gambar');
+        } finally {
+          inp.value = '';
+        }
+      };
+    });
+    grid.querySelectorAll('[data-ae-hapus-img]').forEach(btn => {
+      btn.onclick = () => {
+        const key = btn.getAttribute('data-ae-hapus-img');
+        delete editUploads[key];
+        editRemove[key] = true;
+        if (key.indexOf('kepala_') === 0) {
+          const ix = parseInt(key.split('_')[1], 10) - 1;
+          const card = $$('#aeKepalaList .ae-kepala-card')[ix];
+          if (card) card._kepalaFoto = { fotoUrl: '', fileId: '' };
+        }
+        renderAeImages(editTarget || t);
+      };
+    });
+  }
+
+  async function saveAdminEdit() {
+    const msg = $('#editMsg');
+    if (!editTarget) return;
+    const pin = String(($('#aePin') && $('#aePin').value) || '');
+    if (!pin) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'PIN admin wajib.';
+      return;
+    }
+    const kepala = aeCollectKepala();
+    if (!kepala.length || !kepala[0].nama) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'Minimal 1 nama kepala/pimpinan.';
+      return;
+    }
+    for (let i = 0; i < kepala.length; i++) {
+      if (!kepala[i].nama || !kepala[i].instansi) {
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = 'Nama & instansi pimpinan #' + (i + 1) + ' wajib.';
+        return;
+      }
+    }
+    const timGabungan = !!($('#aeTimGabungan') && $('#aeTimGabungan').checked);
+    const anggotaFaskes = String(($('#aeAnggotaFaskes') && $('#aeAnggotaFaskes').value) || '').trim();
+    if (timGabungan && !anggotaFaskes) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'Tim gabungan wajib isi daftar faskes anggota.';
+      return;
+    }
+    const payload = {
+      token,
+      pin,
+      id: editTarget.id,
+      jenisInstansi: $('#aeJenis').value,
+      namaInstansi: $('#aeNamaInstansi').value.trim(),
+      namaTim: $('#aeNamaTim').value.trim(),
+      kategoriTim: $('#aeKategori').value,
+      namaKapten: $('#aeNamaKapten').value.trim(),
+      warnaJersey: $('#aeWarna').value.trim(),
+      kontakNama: $('#aeKontakNama').value.trim(),
+      kontakWA: $('#aeKontakWA').value.trim(),
+      catatan: $('#aeCatatan').value.trim(),
+      catatanAdmin: $('#aeCatatanAdmin').value.trim(),
+      status: $('#aeStatus').value,
+      timGabungan,
+      anggotaFaskes,
+      kepala,
+      files: Object.assign({}, editUploads),
+      removeImages: Object.keys(editRemove).filter(k => editRemove[k])
+    };
+    if (!payload.jenisInstansi || !payload.namaInstansi || !payload.namaTim || !payload.kategoriTim || !payload.namaKapten || !payload.kontakNama || !payload.kontakWA) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'Lengkapi field wajib.';
+      return;
+    }
+    try {
+      const res = await FutsalAPI.post('adminUpdateTim', payload);
+      msg.hidden = false; msg.className = 'alert alert-ok';
+      msg.textContent = res.message || 'Tersimpan.';
+      if (res.team) {
+        const ix = teams.findIndex(x => x.id === editTarget.id);
+        if (ix >= 0) teams[ix] = Object.assign({}, teams[ix], res.team);
+        else teams.unshift(res.team);
+        if (previewTeam && previewTeam.id === editTarget.id) {
+          previewTeam = Object.assign({}, previewTeam, res.team);
+          renderPreviewBody(previewTeam);
+        }
+      } else {
+        await refresh();
+      }
+      render();
+      setTimeout(closeEditModal, 600);
+    } catch (e) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = (e && e.message) || 'Gagal menyimpan.';
+    }
+  }
+
+
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.7';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.11';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;
@@ -904,6 +1241,24 @@
       if (!previewTeam) return;
       await downloadTeamZip(previewTeam, $('#btnPreviewZip'));
     });
+    const btnPreviewEdit = $('#btnPreviewEdit');
+    if (btnPreviewEdit) {
+      btnPreviewEdit.onclick = () => {
+        if (!previewTeam) return;
+        openEditModal(previewTeam.id);
+      };
+    }
+    $$('[data-close-edit]').forEach(el => el.addEventListener('click', closeEditModal));
+    const btnEditSave = $('#btnEditSave');
+    if (btnEditSave) btnEditSave.onclick = FutsalAPI.withBusy(btnEditSave, saveAdminEdit);
+    const aeGab = $('#aeTimGabungan');
+    if (aeGab) aeGab.onchange = () => { $('#aeAnggotaWrap').hidden = !aeGab.checked; };
+    const aeAdd = $('#aeBtnAddKepala');
+    if (aeAdd) aeAdd.onclick = () => {
+      aeAddKepalaRow();
+      if (editTarget) renderAeImages(editTarget);
+    };
+
     const btnPrevHapus = $('#btnPreviewHapus');
     if (btnPrevHapus) {
       btnPrevHapus.onclick = () => {
@@ -952,6 +1307,7 @@
       sessionStorage.removeItem(C.ADMIN_SESSION_KEY);
       showPanel(false);
       closePreview();
+      closeEditModal();
     };
 
     $('#btnRefresh').onclick = FutsalAPI.withBusy($('#btnRefresh'), refresh);

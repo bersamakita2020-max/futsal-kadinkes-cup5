@@ -238,6 +238,75 @@
             resolve({ ok: true, demo: true, csv: demoCsv(D.teams), message: 'CSV contoh (demo).' });
             break;
 
+
+          case 'adminUpdateTim':
+          case 'adminEditTim': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            const pinU = String((payload && payload.pin) || '');
+            if (pinU !== '1234' && pinU !== 'demo') { resolve({ ok: false, error: 'PIN admin salah.' }); break; }
+            const idU = String((payload && payload.id) || '');
+            const rowU = D.teams.find(x => x.id === idU);
+            if (!rowU) { resolve({ ok: false, error: 'Peserta tidak ditemukan.' }); break; }
+            const statusSebelum = rowU.status || 'pending';
+            const fields = ['jenisInstansi','namaInstansi','namaTim','kategoriTim','namaKapten','kontakNama','kontakWA','warnaJersey','catatan','catatanAdmin','anggotaFaskes'];
+            fields.forEach(f => {
+              if (payload[f] != null) rowU[f] = payload[f];
+            });
+            rowU.timGabungan = !!(payload.timGabungan === true || payload.timGabungan === 'true' || payload.timGabungan === 1);
+            if (payload.status) rowU.status = String(payload.status);
+            if (Array.isArray(payload.kepala) && payload.kepala.length) {
+              rowU.kepala = payload.kepala.map(k => Object.assign({}, k));
+              rowU.namaKepala = rowU.kepala[0].nama || rowU.namaKepala;
+            }
+            const files = payload.files || {};
+            const rem = payload.removeImages || [];
+            const applyFile = (key, urlKey) => {
+              if (files[key] && files[key].dataUrl) {
+                rowU[urlKey] = files[key].dataUrl;
+                if (!rowU.files) rowU.files = {};
+                rowU.files[key] = { url: files[key].dataUrl, fileId: 'demo_' + key };
+              } else if (rem.indexOf(key) >= 0) {
+                rowU[urlKey] = '';
+                if (rowU.files && rowU.files[key]) delete rowU.files[key];
+              }
+            };
+            applyFile('logo', 'logoUrl');
+            applyFile('fotoKapten', 'fotoKaptenUrl');
+            applyFile('jerseyUtama', 'jerseyUtamaUrl');
+            applyFile('jerseyCadangan', 'jerseyCadanganUrl');
+            Object.keys(files).forEach(k => {
+              if (k.indexOf('kepala_') === 0 && files[k] && files[k].dataUrl) {
+                const ix = parseInt(k.split('_')[1], 10) - 1;
+                if (!rowU.kepala) rowU.kepala = [];
+                while (rowU.kepala.length <= ix) rowU.kepala.push({ nama: '', instansi: '', fotoUrl: '', fileId: '' });
+                rowU.kepala[ix].fotoUrl = files[k].dataUrl;
+                rowU.kepala[ix].fileId = 'demo_' + k;
+              }
+            });
+            (rem || []).forEach(k => {
+              if (k.indexOf('kepala_') === 0) {
+                const ix = parseInt(k.split('_')[1], 10) - 1;
+                if (rowU.kepala && rowU.kepala[ix]) { rowU.kepala[ix].fotoUrl = ''; rowU.kepala[ix].fileId = ''; }
+              }
+            });
+            rowU.updatedAt = new Date().toISOString();
+            if (!D._editHistory) D._editHistory = {};
+            if (!D._editHistory[idU]) D._editHistory[idU] = [];
+            D._editHistory[idU].unshift({
+              waktu: new Date().toISOString(),
+              fieldsChanged: JSON.stringify(['oleh:admin'].concat(Object.keys(files).map(k => 'file:' + k))),
+              statusSebelum,
+              statusSesudah: rowU.status
+            });
+            rowU.editHistory = D._editHistory[idU].slice(0, 20);
+            resolve({
+              ok: true, demo: true, id: idU, updated: true, status: rowU.status,
+              team: Object.assign({}, rowU),
+              message: 'MODE DEMO: kit diperbarui oleh admin. Status: ' + rowU.status + '.'
+            });
+            break;
+          }
+
           case 'hapusTim':
           case 'adminHapusTim': {
             if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }

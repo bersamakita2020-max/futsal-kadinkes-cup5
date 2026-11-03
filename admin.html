@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1.0.10">
+<link rel="stylesheet" href="css/app.css?v=1.0.11">
 <link rel="icon" href="icons/favicon.png" type="image/png">
 </head>
 <body>
@@ -131,7 +131,7 @@
         <button type="button" class="btn btn-primary" id="btnPreviewVerify">Verifikasi</button>
         <button type="button" class="btn btn-danger" id="btnPreviewReject">Tolak</button>
         <button type="button" class="btn btn-outline" id="btnPreviewPending">Tunda</button>
-        <a class="btn btn-outline" id="btnPreviewEdit" href="index.html#/kit" target="_blank" rel="noopener">Formulir / Edit</a>
+        <button type="button" class="btn btn-outline" id="btnPreviewEdit">Edit</button>
         <button type="button" class="btn btn-navy" id="btnPreviewZip">Unduh Semua Kit (ZIP)</button>
         <button type="button" class="btn btn-danger" id="btnPreviewHapus">Hapus</button>
       </div>
@@ -173,6 +173,112 @@
   </div>
 </div>
 
+
+<!-- Admin Edit modal -->
+<div id="editModal" class="admin-modal" hidden>
+  <div class="admin-modal-backdrop" data-close-edit></div>
+  <div class="admin-modal-panel admin-edit-panel" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <header class="admin-modal-head">
+      <div>
+        <h2 id="editTitle">Edit Kit</h2>
+        <div id="editSub" class="admin-modal-sub">Perbarui data &amp; gambar. Tim terverifikasi tetap bisa diedit admin (status tidak berubah kecuali Anda ubah).</div>
+      </div>
+      <button type="button" class="btn btn-outline" data-close-edit>Tutup</button>
+    </header>
+    <div class="admin-modal-body">
+      <form id="formAdminEdit" novalidate>
+        <input type="hidden" id="aeId" value="">
+        <div class="form-grid ae-grid">
+          <label class="field">Jenis instansi *
+            <select id="aeJenis" required>
+              <option value="">— pilih —</option>
+              <option value="Puskesmas">Puskesmas</option>
+              <option value="RS">Rumah Sakit</option>
+              <option value="Labkesda">Labkesda</option>
+              <option value="BPJS">BPJS</option>
+              <option value="DP3AP2KB">DP3AP2KB</option>
+            </select>
+          </label>
+          <label class="field">Nama instansi *
+            <input type="text" id="aeNamaInstansi" required maxlength="120">
+          </label>
+          <label class="field">Nama tim *
+            <input type="text" id="aeNamaTim" required maxlength="80">
+          </label>
+          <label class="field">Kategori tim *
+            <select id="aeKategori" required>
+              <option value="">— pilih —</option>
+              <option value="Putra">Putra</option>
+              <option value="Putri">Putri (Wanita)</option>
+            </select>
+          </label>
+          <label class="field">Nama kapten *
+            <input type="text" id="aeNamaKapten" required maxlength="80">
+          </label>
+          <label class="field">Warna jersey
+            <input type="text" id="aeWarna" maxlength="60">
+          </label>
+          <label class="field">Nama kontak / manajer *
+            <input type="text" id="aeKontakNama" required maxlength="80">
+          </label>
+          <label class="field">Nomor WA kontak *
+            <input type="tel" id="aeKontakWA" required maxlength="20" placeholder="08xxxxxxxxxx">
+          </label>
+          <label class="field">Status kit
+            <select id="aeStatus">
+              <option value="pending">Menunggu</option>
+              <option value="verified">Terverifikasi</option>
+              <option value="rejected">Ditolak</option>
+            </select>
+            <span class="hint">Kosongkan perubahan = biarkan nilai terpilih. Default = status saat ini.</span>
+          </label>
+          <label class="field full">Catatan (publik/opsional)
+            <input type="text" id="aeCatatan" maxlength="200">
+          </label>
+          <label class="field full">Catatan admin (internal)
+            <input type="text" id="aeCatatanAdmin" maxlength="500" placeholder="Hanya terlihat di admin">
+          </label>
+
+          <div class="full kepala-section">
+            <div class="kepala-head">
+              <strong style="color:var(--navy)">Kepala / Pimpinan</strong>
+              <span class="hint" style="display:block;margin-top:4px">Maksimal 5. Bisa tambah/hapus.</span>
+            </div>
+            <label class="check-row" style="margin:10px 0 8px">
+              <input type="checkbox" id="aeTimGabungan" value="1">
+              <span>Tim gabungan</span>
+            </label>
+            <label class="field full" id="aeAnggotaWrap" hidden>
+              Daftar faskes / instansi anggota *
+              <textarea id="aeAnggotaFaskes" rows="2" maxlength="400"></textarea>
+            </label>
+            <div id="aeKepalaList" class="kepala-list" aria-live="polite"></div>
+            <button type="button" class="btn btn-outline" id="aeBtnAddKepala" style="margin-top:8px">+ Tambah Kepala/Pimpinan</button>
+          </div>
+
+          <div class="full"><strong style="color:var(--navy)">Gambar kit</strong>
+            <span class="hint" style="display:block">Thumbnail saat ini · Ganti = pilih file baru (dikompres) · Hapus gambar untuk opsional</span>
+          </div>
+          <div class="ae-img-grid full" id="aeImgGrid">
+            <!-- filled by JS: logo, kapten, jerseyUtama, jerseyCadangan + kepala -->
+          </div>
+
+          <label class="field">PIN admin *
+            <input type="password" id="aePin" maxlength="32" autocomplete="current-password" required>
+          </label>
+        </div>
+      </form>
+      <div id="editMsg" hidden style="margin-top:12px"></div>
+    </div>
+    <footer class="admin-modal-foot">
+      <div class="admin-modal-actions">
+        <button type="button" class="btn btn-outline" data-close-edit>Batal</button>
+        <button type="button" class="btn btn-primary" id="btnEditSave">Simpan perubahan</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
 <!-- Lightbox -->
 <div id="lightbox" class="lightbox" hidden>
   <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Tutup">×</button>
@@ -185,14 +291,14 @@
 
 <footer class="footer">
   <div class="container credits">
-    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.10</span>
+    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.11</span>
   </div>
 </footer>
 
-<script src="js/config.js?v=1.0.10"></script>
-<script src="js/demo-data.js?v=1.0.10"></script>
-<script src="js/api.js?v=1.0.10"></script>
-<script src="assets/vendor/jszip.min.js?v=1.0.10"></script>
-<script src="js/admin.js?v=1.0.10"></script>
+<script src="js/config.js?v=1.0.11"></script>
+<script src="js/demo-data.js?v=1.0.11"></script>
+<script src="js/api.js?v=1.0.11"></script>
+<script src="assets/vendor/jszip.min.js?v=1.0.11"></script>
+<script src="js/admin.js?v=1.0.11"></script>
 </body>
 </html>

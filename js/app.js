@@ -873,7 +873,7 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.10';
+    $('#versiLabel').textContent = C.VERSI || '1.0.11';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);
