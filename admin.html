@@ -19,7 +19,7 @@
       <img src="assets/kc5_sm.png" alt="KC5">
       <div class="brand-text">
         <strong>Admin Kit Faskes</strong>
-        <span>Verifikasi kit peserta</span>
+        <span>Preview &amp; verifikasi kit</span>
       </div>
     </a>
     <nav class="nav-links" style="display:flex">
@@ -30,7 +30,7 @@
 </header>
 
 <main class="admin-wrap">
-  <div class="container" style="max-width:1000px">
+  <div class="container" style="max-width:1100px">
     <section id="loginBox" class="form-card" style="max-width:420px;margin:40px auto">
       <h2 style="margin-top:0;color:var(--navy);font-family:var(--display);text-transform:uppercase">Masuk Admin</h2>
       <p style="color:var(--muted);font-size:.9rem">PIN disimpan di Script Properties Apps Script (bukan di kode sumber).</p>
@@ -47,16 +47,30 @@
       <div class="section-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end">
         <div>
           <h2>Verifikasi Kit Faskes</h2>
-          <p>Tandai kit terverifikasi, tunda, tolak, atau ekspor.</p>
+          <p>Preview unggahan, unduh file, verifikasi / tolak.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-outline" id="btnRefresh">Muat ulang</button>
+          <button type="button" class="btn btn-outline" id="btnZipAll" title="ZIP semua tim yang tampil di filter">Unduh semua (ZIP)</button>
           <button type="button" class="btn btn-primary" id="btnExport">Ekspor CSV</button>
         </div>
       </div>
       <div class="form-card" style="margin-bottom:14px">
         <div class="form-grid">
-          <label class="field">Filter status
+          <label class="field">Cari
+            <input type="text" id="fSearch" placeholder="Nama tim / instansi / kapten">
+          </label>
+          <label class="field">Jenis instansi
+            <select id="fJenis">
+              <option value="">Semua</option>
+              <option value="Puskesmas">Puskesmas</option>
+              <option value="RS">Rumah Sakit</option>
+              <option value="Labkesda">Labkesda</option>
+              <option value="BPJS">BPJS</option>
+              <option value="DP3AP2KB">DP3AP2KB</option>
+            </select>
+          </label>
+          <label class="field">Status verifikasi
             <select id="fStatus">
               <option value="">Semua</option>
               <option value="pending">Menunggu</option>
@@ -64,39 +78,68 @@
               <option value="rejected">Ditolak</option>
             </select>
           </label>
-          <label class="field">Cari
-            <input type="text" id="fSearch" placeholder="Nama tim / instansi">
+          <label class="field">Kelengkapan kit
+            <select id="fKit">
+              <option value="">Semua</option>
+              <option value="lengkap">Kit lengkap</option>
+              <option value="belum">Belum lengkap</option>
+            </select>
           </label>
         </div>
       </div>
       <div id="adminMsg" hidden></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Tim</th>
-              <th>Instansi</th>
-              <th>Status</th>
-              <th>Kontak</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="adminRows"></tbody>
-        </table>
-      </div>
+      <div id="adminList" class="admin-list" aria-live="polite"></div>
     </section>
   </div>
 </main>
 
+<!-- Preview drawer/modal -->
+<div id="previewModal" class="admin-modal" hidden>
+  <div class="admin-modal-backdrop" data-close-preview></div>
+  <div class="admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <header class="admin-modal-head">
+      <div>
+        <h2 id="previewTitle">Preview Kit</h2>
+        <div id="previewSub" class="admin-modal-sub"></div>
+      </div>
+      <button type="button" class="btn btn-outline" data-close-preview>Tutup</button>
+    </header>
+    <div id="previewBody" class="admin-modal-body"></div>
+    <footer class="admin-modal-foot">
+      <label class="field" style="flex:1;min-width:180px;margin:0">Catatan ke faskes (opsional)
+        <input type="text" id="previewNote" maxlength="500" placeholder="Contoh: logo kurang jelas, unggah ulang">
+      </label>
+      <div class="admin-modal-actions">
+        <button type="button" class="btn btn-primary" id="btnPreviewVerify">Verifikasi</button>
+        <button type="button" class="btn btn-danger" id="btnPreviewReject">Tolak</button>
+        <button type="button" class="btn btn-outline" id="btnPreviewPending">Tunda</button>
+        <a class="btn btn-outline" id="btnPreviewEdit" href="index.html#/kit" target="_blank" rel="noopener">Formulir / Edit</a>
+        <button type="button" class="btn btn-navy" id="btnPreviewZip">Unduh Semua Kit (ZIP)</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" hidden>
+  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Tutup">×</button>
+  <img id="lightboxImg" alt="Preview besar">
+  <div class="lightbox-actions">
+    <a id="lightboxDrive" class="btn btn-outline" target="_blank" rel="noopener">Buka di Drive</a>
+    <button type="button" class="btn btn-navy" id="lightboxDl">Unduh</button>
+  </div>
+</div>
+
 <footer class="footer">
   <div class="container credits">
-    Penyusun: <strong>Anara Tech</strong>
+    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.6</span>
   </div>
 </footer>
 
 <script src="js/config.js"></script>
 <script src="js/demo-data.js"></script>
 <script src="js/api.js"></script>
+<script src="assets/vendor/jszip.min.js"></script>
 <script src="js/admin.js"></script>
 </body>
 </html>

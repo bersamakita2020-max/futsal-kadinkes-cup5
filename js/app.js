@@ -77,10 +77,31 @@
   function ph(label) {
     return '<div class="ph">' + esc(label) + '</div>';
   }
-  function imgOrPh(url, label) {
-    if (url) return '<img src="' + esc(url) + '" alt="' + esc(label) + '" loading="lazy">';
-    return ph(label + ' (belum ada)');
+  function driveFallbacks(url) {
+    const u = String(url || '');
+    const m = u.match(/[?&]id=([A-Za-z0-9_-]+)/) || u.match(/\/d\/([A-Za-z0-9_-]+)/) || u.match(/lh3\.googleusercontent\.com\/d\/([A-Za-z0-9_-]+)/);
+    if (!m) return [u];
+    const id = m[1];
+    return [
+      'https://lh3.googleusercontent.com/d/' + id + '=w1600',
+      'https://drive.google.com/thumbnail?id=' + id + '&sz=w1600',
+      u
+    ];
   }
+  function imgOrPh(url, label) {
+    if (!url) return ph(label + ' (belum ada)');
+    const list = driveFallbacks(url);
+    const src = list[0];
+    const alts = list.slice(1).join('|');
+    return '<img src="' + esc(src) + '" alt="' + esc(label) + '" loading="lazy" referrerpolicy="no-referrer" data-fallbacks="' + esc(alts) + '" onerror="window.__futsalImgErr&&window.__futsalImgErr(this)">';
+  }
+  window.__futsalImgErr = function (img) {
+    const raw = img.getAttribute('data-fallbacks') || '';
+    const rest = raw.split('|').filter(Boolean);
+    if (!rest.length) { img.onerror = null; img.replaceWith(Object.assign(document.createElement('div'), { className: 'ph', textContent: (img.alt || 'Gambar') + ' (gagal muat)' })); return; }
+    img.setAttribute('data-fallbacks', rest.slice(1).join('|'));
+    img.src = rest[0];
+  };
 
   function avatarStack(t) {
     const list = kepalaOf(t).slice(0, 5);
@@ -223,7 +244,7 @@
       box.innerHTML =
         '<p><a href="#/galeri" data-nav>← Kembali ke galeri</a></p>' +
         '<div class="detail-hero reveal">' +
-          '<span class="logo-badge"><img src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt="Logo"></span>' +
+          '<span class="logo-badge">' + (t.logoUrl ? imgOrPh(t.logoUrl, 'Logo') : '<img src="assets/kc5_sm.png" alt="Logo">') + '</span>' +
           '<div>' + demo +
             '<div class="pill-row" style="margin-bottom:8px">' +
               '<span class="pill">' + esc(jenisLabel(t.jenisInstansi)) + '</span>' +
@@ -245,12 +266,6 @@
           '<figure class="reveal">' + imgOrPh(t.jerseyCadanganUrl || t.logoUrl, t.jerseyCadanganUrl ? 'Cadangan' : 'Logo') +
             '<figcaption>' + (t.jerseyCadanganUrl ? 'Jersey cadangan' : 'Logo tim') + '</figcaption></figure>' +
           '<figure class="reveal">' + imgOrPh(t.logoUrl, 'Logo') + '<figcaption>Logo tim</figcaption></figure>' +
-        '</div>' +
-        '<div class="form-card reveal">' +
-          '<h3 style="margin-top:0;color:var(--navy)">Kontak</h3>' +
-          '<p style="margin:0;color:var(--muted)">Manajer: <strong style="color:var(--ink)">' + esc(t.kontakNama) + '</strong>' +
-          (t.kontakWA ? ' · WA: <a href="https://wa.me/62' + esc(String(t.kontakWA).replace(/^0/, '').replace(/\D/g, '')) + '" target="_blank" rel="noopener">' + esc(t.kontakWA) + '</a>' : '') +
-          '</p>' +
         '</div>';
       observeReveal(box);
     } catch (e) {
@@ -602,7 +617,7 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.5';
+    $('#versiLabel').textContent = C.VERSI || '1.0.6';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);

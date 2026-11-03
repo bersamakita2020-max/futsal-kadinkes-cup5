@@ -124,6 +124,20 @@
             if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
             resolve({ ok: true, teams: D.teams, demo: true });
             break;
+          case 'adminGetTeam': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            const tt = D.teams.find(x => x.id === (payload && payload.id));
+            if (!tt) resolve({ ok: false, error: 'Peserta tidak ditemukan.' });
+            else resolve({ ok: true, team: tt, demo: true });
+            break;
+          }
+          case 'adminDownloadFile': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            // tiny 1x1 png
+            const b64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+            resolve({ ok: true, demo: true, id: payload.id, key: payload.key, filename: 'demo_'+(payload.key||'file')+'.png', mime: 'image/png', base64: b64, size: 68 });
+            break;
+          }
           case 'adminSetStatus':
             resolve({ ok: true, demo: true, message: 'MODE DEMO: status tidak diubah permanen.' });
             break;

@@ -582,3 +582,77 @@ table.data tr:hover td { background: rgba(26,166,160,.05); }
 }
 
 .badge-labkesda { background: rgba(14, 116, 144, .14); color: #0e7490; }
+
+/* v1.0.6 admin preview / lightbox */
+body.modal-open { overflow: hidden; }
+.admin-list { display: flex; flex-direction: column; gap: 12px; }
+.admin-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px; max-width: 100%;
+}
+.admin-card-main { display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr); gap: 12px; align-items: start; }
+.admin-thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.admin-thumbs img, .admin-thumb-ph {
+  width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: #eef2f7;
+}
+.admin-thumb-ph {
+  display: flex; align-items: center; justify-content: center; font-size: .65rem; color: var(--muted); font-weight: 600;
+}
+.admin-card-info h3 { margin: 4px 0; font-size: 1.05rem; color: var(--navy); }
+.admin-card-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.admin-card-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-kit-mini { margin-top: 6px; }
+.admin-modal[hidden], .lightbox[hidden] { display: none !important; }
+.admin-modal { position: fixed; inset: 0; z-index: 80; }
+.admin-modal-backdrop { position: absolute; inset: 0; background: rgba(3,20,50,.55); }
+.admin-modal-panel {
+  position: absolute; inset: 0; background: #f4f7fb; display: flex; flex-direction: column;
+  max-width: 100%; overflow: hidden;
+}
+@media (min-width: 900px) {
+  .admin-modal-panel {
+    inset: 24px auto 24px 50%; transform: translateX(-50%);
+    width: min(980px, calc(100% - 48px)); border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .admin-card-main { grid-template-columns: minmax(0, 180px) minmax(0, 1fr); }
+}
+.admin-modal-head, .admin-modal-foot {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: #fff; border-bottom: 1px solid var(--line);
+}
+.admin-modal-foot { border-bottom: 0; border-top: 1px solid var(--line); align-items: end; }
+.admin-modal-sub { font-size: .85rem; color: var(--muted); }
+.admin-modal-body { flex: 1; overflow: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
+.admin-modal-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.preview-dl { display: grid; gap: 8px; margin: 0; }
+.preview-dl > div { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 8px; font-size: .88rem; }
+.preview-dl dt { color: var(--muted); margin: 0; }
+.preview-dl dd { margin: 0; overflow-wrap: anywhere; }
+.preview-kepala { display: flex; flex-direction: column; gap: 8px; }
+.preview-person { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 10px; align-items: center; }
+.preview-person img { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; }
+.preview-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.preview-shot { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.preview-shot img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.preview-shot figcaption {
+  display: flex; justify-content: space-between; gap: 6px; align-items: center;
+  padding: 8px; font-size: .72rem; font-weight: 600;
+}
+.preview-shot-acts { display: flex; gap: 6px; align-items: center; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.88);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px;
+}
+.lightbox img { max-width: min(96vw, 1100px); max-height: 78vh; object-fit: contain; border-radius: 8px; }
+.lightbox-close {
+  position: absolute; top: 10px; right: 12px; width: 42px; height: 42px; border: 0; border-radius: 999px;
+  background: rgba(255,255,255,.15); color: #fff; font-size: 1.6rem; cursor: pointer;
+}
+.lightbox-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.linkish { background: none; border: 0; color: var(--teal); font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline; }
+@media (max-width: 640px) {
+  .admin-card-main { grid-template-columns: minmax(0, 1fr); }
+  .admin-thumbs { grid-template-columns: repeat(4, minmax(0,1fr)); max-width: 100%; }
+}
