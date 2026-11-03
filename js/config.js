@@ -3,8 +3,8 @@
  * API_URL: URL Web App (/exec). Kosongkan atau DEMO_MODE=true untuk preview lokal.
  */
 window.FUTSAL_CONFIG = {
-  API_URL: '', // contoh: 'https://script.google.com/macros/s/XXXX/exec'
-  DEMO_MODE: true, // set false setelah backend siap
+  API_URL: 'https://script.google.com/macros/s/AKfycbybky9xRl_abbE2yoYEkU-MtRsvDUUNcuh_gGg9Knb7-bGMD8hhsiqRm8_kRMJpYXLqng/exec', // contoh: 'https://script.google.com/macros/s/XXXX/exec'
+  DEMO_MODE: false, // set false setelah backend siap
   NAMA_APLIKASI: 'Kit Faskes Peserta',
   NAMA_EVENT: 'KADINKES CUP Seri V 2026',
   TAGLINE: 'Futsal Nakes · HKN Ke-62',
