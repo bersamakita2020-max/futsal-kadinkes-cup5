@@ -16,6 +16,12 @@
     $('#btnLogout').hidden = !ok;
   }
 
+  function jenisLabel(j) {
+    if (j === 'RS') return 'Rumah Sakit';
+    if (j === 'BPJS') return 'BPJS';
+    if (j === 'DP3AP2KB') return 'DP3AP2KB';
+    return j || 'Puskesmas';
+  }
   function statusLabel(s) {
     if (s === 'verified') return '<span class="badge badge-ok">Kit terverifikasi</span>';
     if (s === 'rejected') return '<span class="badge badge-demo">Ditolak</span>';
@@ -40,7 +46,7 @@
       '<tr data-id="' + esc(t.id) + '">' +
         '<td><strong>' + esc(t.namaTim) + '</strong>' + (t._contoh ? ' <span class="badge badge-demo">CONTOH</span>' : '') +
           '<div style="font-size:.78rem;color:var(--muted)">' + esc(t.id) + '</div></td>' +
-        '<td>' + esc(t.jenisInstansi) + '<br><span style="color:var(--muted);font-size:.84rem">' + esc(t.namaInstansi) + '</span></td>' +
+        '<td>' + esc(jenisLabel(t.jenisInstansi)) + '<br><span style="color:var(--muted);font-size:.84rem">' + esc(t.namaInstansi) + '</span></td>' +
         '<td>' + statusLabel(t.status) + '</td>' +
         '<td style="font-size:.84rem">' + esc(t.kontakNama) + '<br>' + esc(t.kontakWA) + '</td>' +
         '<td style="white-space:nowrap">' +

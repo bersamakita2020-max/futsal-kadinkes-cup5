@@ -1,13 +1,15 @@
 /** Data CONTOH — Kit Faskes Peserta (jelas berlabel contoh). */
 window.FUTSAL_DEMO = {
   stats: {
-    total: 3,
+    total: 5,
     puskesmas: 2,
     rs: 1,
-    verified: 2,
-    pending: 1,
-    kitLengkap: 2,
-    kitBelum: 1
+    bpjs: 1,
+    dp3ap2kb: 1,
+    verified: 3,
+    pending: 2,
+    kitLengkap: 3,
+    kitBelum: 2
   },
   teams: [
     {
@@ -26,10 +28,6 @@ window.FUTSAL_DEMO = {
       warnaJersey: 'Navy & Lime',
       kontakNama: 'Andi Manajer CONTOH',
       kontakWA: '081234567890',
-      pemain: [
-        { nama: 'Budi CONTOH', nomor: 10, posisi: 'Pivot' },
-        { nama: 'Rudi CONTOH', nomor: 1, posisi: 'Kiper' }
-      ],
       kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: true, jerseyCadangan: false, lengkap: true, persen: 100 },
       createdAt: '2026-10-20T08:00:00+07:00',
       _contoh: true
@@ -50,7 +48,6 @@ window.FUTSAL_DEMO = {
       warnaJersey: 'Teal & Putih',
       kontakNama: 'Dewi CONTOH',
       kontakWA: '081298765432',
-      pemain: [{ nama: 'Citra CONTOH', nomor: 9, posisi: 'Pivot' }],
       kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: true, jerseyCadangan: true, lengkap: true, persen: 100 },
       createdAt: '2026-10-22T10:30:00+07:00',
       _contoh: true
@@ -71,9 +68,48 @@ window.FUTSAL_DEMO = {
       warnaJersey: 'Hijau & Kuning',
       kontakNama: 'Fajar CONTOH',
       kontakWA: '082112345678',
-      pemain: [],
       kit: { logo: true, jerseyUtama: false, fotoKapten: false, fotoKepala: true, jerseyCadangan: false, lengkap: false, persen: 50 },
       createdAt: '2026-10-28T14:15:00+07:00',
+      _contoh: true
+    },
+    {
+      id: 'DEMO-004',
+      status: 'verified',
+      jenisInstansi: 'BPJS',
+      namaInstansi: 'BPJS Kesehatan CONTOH Cabang Sintang',
+      namaTim: 'BPJS CONTOH FC',
+      namaKapten: 'Gita CONTOH',
+      fotoKaptenUrl: 'assets/kc5_sm.png',
+      namaKepala: 'Kepala Kantor CONTOH',
+      fotoKepalaUrl: 'assets/kemenkes_sm.png',
+      logoUrl: 'assets/kemenkes_sm.png',
+      jerseyUtamaUrl: 'assets/kc5_h_sm.png',
+      jerseyCadanganUrl: '',
+      warnaJersey: 'Biru & Putih',
+      kontakNama: 'Hana CONTOH',
+      kontakWA: '081311122233',
+      kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: true, jerseyCadangan: false, lengkap: true, persen: 100 },
+      createdAt: '2026-10-25T09:00:00+07:00',
+      _contoh: true
+    },
+    {
+      id: 'DEMO-005',
+      status: 'pending',
+      jenisInstansi: 'DP3AP2KB',
+      namaInstansi: 'DP3AP2KB CONTOH Kabupaten Sintang',
+      namaTim: 'DP3AP2KB CONTOH United',
+      namaKapten: 'Irwan CONTOH',
+      fotoKaptenUrl: 'assets/sintang_sm.png',
+      namaKepala: 'Kepala Dinas CONTOH',
+      fotoKepalaUrl: '',
+      logoUrl: 'assets/sintang_sm.png',
+      jerseyUtamaUrl: 'assets/kc5_sm.png',
+      jerseyCadanganUrl: '',
+      warnaJersey: 'Ungu & Putih',
+      kontakNama: 'Joko CONTOH',
+      kontakWA: '081355566677',
+      kit: { logo: true, jerseyUtama: true, fotoKapten: true, fotoKepala: false, jerseyCadangan: false, lengkap: false, persen: 75 },
+      createdAt: '2026-10-29T11:00:00+07:00',
       _contoh: true
     }
   ]

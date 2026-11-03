@@ -11,7 +11,7 @@ window.FUTSAL_CONFIG = {
   TANGGAL_EVENT: '8–12 November 2026',
   LOKASI_EVENT: '', // belum dikonfirmasi
   PENYELENGGARA: 'Dinas Kesehatan Kabupaten Sintang',
-  VERSI: '1.0.2-tahap1',
+  VERSI: '1.0.3-tahap1',
   MAX_FOTO_PX: 1600,
   MAX_FILE_MB: 4,
   ADMIN_SESSION_KEY: 'futsal_kc5_admin_token'

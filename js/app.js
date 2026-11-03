@@ -4,6 +4,19 @@
   const C = window.FUTSAL_CONFIG;
   const uploads = {};
 
+  function jenisLabel(j) {
+    if (j === 'RS') return 'Rumah Sakit';
+    if (j === 'BPJS') return 'BPJS';
+    if (j === 'DP3AP2KB') return 'DP3AP2KB';
+    return 'Puskesmas';
+  }
+  function jenisBadgeClass(j) {
+    if (j === 'RS') return 'badge-rs';
+    if (j === 'BPJS') return 'badge-bpjs';
+    if (j === 'DP3AP2KB') return 'badge-dp3';
+    return 'badge-pk';
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -37,7 +50,7 @@
           '<li class="' + (k.logo ? 'yes' : '') + '">Logo</li>' +
           '<li class="' + (k.jerseyUtama ? 'yes' : '') + '">Jersey</li>' +
           '<li class="' + (k.fotoKapten ? 'yes' : '') + '">Kapten</li>' +
-          '<li class="' + (k.fotoKepala ? 'yes' : '') + '">Kepala</li>' +
+          '<li class="' + (k.fotoKepala ? 'yes' : '') + '">Pimpinan</li>' +
         '</ul>' +
       '</div>'
     );
@@ -52,8 +65,8 @@
   }
 
   function teamCard(t) {
-    const jenis = t.jenisInstansi === 'RS' ? 'RS' : 'Puskesmas';
-    const badgeJenis = jenis === 'RS' ? 'badge-rs' : 'badge-pk';
+    const jenis = jenisLabel(t.jenisInstansi);
+    const badgeJenis = jenisBadgeClass(t.jenisInstansi);
     const statusBadge = t.status === 'verified'
       ? '<span class="badge badge-ok">Kit terverifikasi</span>'
       : t.status === 'rejected'
@@ -102,6 +115,8 @@
       $('#statTotal').textContent = s.total != null ? s.total : '—';
       $('#statPk').textContent = s.puskesmas != null ? s.puskesmas : '—';
       $('#statRs').textContent = s.rs != null ? s.rs : '—';
+      const sb = $('#statBpjs'); if (sb) sb.textContent = s.bpjs != null ? s.bpjs : '—';
+      const sd = $('#statDp3'); if (sd) sd.textContent = s.dp3ap2kb != null ? s.dp3ap2kb : '—';
       $('#statKit').textContent = s.kitLengkap != null ? s.kitLengkap : '—';
       $('#statOk').textContent = s.verified != null ? s.verified : '—';
     } catch (e) { console.warn(e); }
@@ -149,7 +164,6 @@
         t = res.team;
       }
       if (!t) throw new Error('Peserta tidak ditemukan.');
-      const pemain = Array.isArray(t.pemain) ? t.pemain : [];
       const k = kitMeta(t);
       const demo = t._contoh ? '<span class="badge badge-demo">DATA CONTOH</span> ' : '';
       box.innerHTML =
@@ -158,7 +172,7 @@
           '<span class="logo-badge"><img src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt="Logo"></span>' +
           '<div>' + demo +
             '<div class="pill-row" style="margin-bottom:8px">' +
-              '<span class="pill">' + esc(t.jenisInstansi === 'RS' ? 'Rumah Sakit' : 'Puskesmas') + '</span>' +
+              '<span class="pill">' + esc(jenisLabel(t.jenisInstansi)) + '</span>' +
               (t.status === 'verified' ? '<span class="pill ghost">Kit terverifikasi</span>' : '<span class="pill ghost">Menunggu verifikasi</span>') +
             '</div>' +
             '<h2 style="margin:0 0 4px;font-family:var(--display);font-size:2rem;text-transform:uppercase">' + esc(t.namaTim) + '</h2>' +
@@ -169,7 +183,7 @@
         '<div class="form-card reveal" style="margin-bottom:16px">' + kitBar(t) + '</div>' +
         '<div class="gallery-4 stagger" style="margin-bottom:18px">' +
           '<figure class="reveal">' + imgOrPh(t.fotoKaptenUrl, 'Kapten') + '<figcaption>Kapten · ' + esc(t.namaKapten) + '</figcaption></figure>' +
-          '<figure class="reveal">' + imgOrPh(t.fotoKepalaUrl, 'Kepala') + '<figcaption>Kepala / Direktur · ' + esc(t.namaKepala) + '</figcaption></figure>' +
+          '<figure class="reveal">' + imgOrPh(t.fotoKepalaUrl, 'Pimpinan') + '<figcaption>Kepala / Pimpinan · ' + esc(t.namaKepala) + '</figcaption></figure>' +
           '<figure class="reveal">' + imgOrPh(t.jerseyUtamaUrl, 'Jersey') + '<figcaption>Jersey utama</figcaption></figure>' +
           '<figure class="reveal">' + imgOrPh(t.jerseyCadanganUrl || t.logoUrl, t.jerseyCadanganUrl ? 'Cadangan' : 'Logo') +
             '<figcaption>' + (t.jerseyCadanganUrl ? 'Jersey cadangan' : 'Logo tim') + '</figcaption></figure>' +
@@ -179,11 +193,6 @@
           '<p style="margin:0;color:var(--muted)">Manajer: <strong style="color:var(--ink)">' + esc(t.kontakNama) + '</strong>' +
           (t.kontakWA ? ' · WA: <a href="https://wa.me/62' + esc(String(t.kontakWA).replace(/^0/, '').replace(/\D/g, '')) + '" target="_blank" rel="noopener">' + esc(t.kontakWA) + '</a>' : '') +
           '</p>' +
-          (pemain.length
-            ? '<h3 style="color:var(--navy);margin-top:18px">Skuad</h3><div class="table-wrap"><table class="data"><thead><tr><th>#</th><th>Nama</th><th>Posisi</th></tr></thead><tbody>' +
-              pemain.map(p => '<tr><td>' + esc(p.nomor || '—') + '</td><td>' + esc(p.nama) + '</td><td>' + esc(p.posisi || '—') + '</td></tr>').join('') +
-              '</tbody></table></div>'
-            : '') +
         '</div>';
       observeReveal(box);
     } catch (e) {
@@ -230,31 +239,10 @@
     });
   }
 
-  function addPlayerRow(data) {
-    data = data || {};
-    const row = document.createElement('div');
-    row.className = 'player-row';
-    row.innerHTML =
-      '<input type="text" placeholder="Nama pemain" value="' + esc(data.nama || '') + '" data-p="nama">' +
-      '<input type="number" placeholder="No" min="0" max="99" value="' + esc(data.nomor != null ? data.nomor : '') + '" data-p="nomor">' +
-      '<input type="text" placeholder="Posisi" value="' + esc(data.posisi || '') + '" data-p="posisi">' +
-      '<button type="button" class="x" title="Hapus">×</button>';
-    $('.x', row).onclick = () => row.remove();
-    $('#playersBox').appendChild(row);
-  }
 
-  function collectPlayers() {
-    return $$('#playersBox .player-row').map(row => ({
-      nama: ($('[data-p=nama]', row).value || '').trim(),
-      nomor: ($('[data-p=nomor]', row).value || '').trim(),
-      posisi: ($('[data-p=posisi]', row).value || '').trim()
-    })).filter(p => p.nama);
-  }
 
   function setupForm() {
     setupUploads();
-    $('#btnAddPlayer').onclick = () => addPlayerRow();
-    addPlayerRow();
     const form = $('#formDaftar');
     const btn = $('#btnSubmit');
     form.addEventListener('submit', FutsalAPI.withBusy(btn, async (e) => {
@@ -290,7 +278,6 @@
         kontakWA: wa,
         warnaJersey: String(fd.get('warnaJersey') || '').trim(),
         catatan: String(fd.get('catatan') || '').trim(),
-        pemain: collectPlayers(),
         files: {
           fotoKapten: uploads.fotoKapten || null,
           fotoKepala: uploads.fotoKepala || null,
@@ -313,8 +300,6 @@
           form.reset();
           Object.keys(uploads).forEach(k => delete uploads[k]);
           $$('.upload').forEach(u => { u.classList.remove('has-file'); $('.name', u).textContent = ''; });
-          $('#playersBox').innerHTML = '';
-          addPlayerRow();
         }
         window.scrollTo({ top: msg.offsetTop - 80, behavior: 'smooth' });
       } catch (err) {

@@ -49,9 +49,9 @@
           </div>
           <h1>Kit Faskes<br><em>Peserta</em></h1>
           <p class="lead" id="heroLead">
-            Platform unggah identitas visual tim futsal Puskesmas &amp; Rumah Sakit peserta
-            KADINKES CUP Seri V. Lengkapi logo, jersey, foto kapten, dan foto kepala faskes —
-            file tersimpan aman di Google Drive.
+            Platform unggah identitas visual tim futsal peserta KADINKES CUP Seri V
+            (Puskesmas, Rumah Sakit, BPJS &amp; DP3AP2KB). Lengkapi logo, jersey, foto kapten,
+            dan foto pimpinan — file tersimpan aman di Google Drive.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#/kit" data-nav>Unggah Kit Faskes</a>
@@ -68,6 +68,8 @@
           <div class="stat"><span>Faskes peserta</span><b id="statTotal">—</b></div>
           <div class="stat"><span>Puskesmas</span><b id="statPk">—</b></div>
           <div class="stat"><span>Rumah Sakit</span><b id="statRs">—</b></div>
+          <div class="stat"><span>BPJS</span><b id="statBpjs">—</b></div>
+          <div class="stat"><span>DP3AP2KB</span><b id="statDp3">—</b></div>
           <div class="stat"><span>Kit lengkap</span><b id="statKit">—</b></div>
           <div class="stat"><span>Kit terverifikasi</span><b id="statOk">—</b></div>
         </aside>
@@ -89,12 +91,12 @@
           <article class="feature reveal">
             <div class="ico">02</div>
             <h3>Peserta</h3>
-            <p>Tim futsal dari <strong>Puskesmas</strong> dan <strong>Rumah Sakit</strong> peserta KADINKES CUP (Nakes).</p>
+            <p>Tim futsal dari <strong>Puskesmas</strong>, <strong>Rumah Sakit</strong>, <strong>BPJS</strong>, dan <strong>DP3AP2KB</strong> peserta KADINKES CUP.</p>
           </article>
           <article class="feature reveal">
             <div class="ico">03</div>
             <h3>Isi Kit Faskes</h3>
-            <p>Wajib: logo tim, jersey utama, foto kapten, foto kepala faskes. Opsional: jersey cadangan &amp; daftar pemain.</p>
+            <p>Wajib: logo tim, jersey utama, foto kapten, foto kepala/pimpinan. Opsional: jersey cadangan.</p>
           </article>
         </div>
       </div>
@@ -132,6 +134,8 @@
                 <option value="">Semua</option>
                 <option value="Puskesmas">Puskesmas</option>
                 <option value="RS">Rumah Sakit</option>
+                <option value="BPJS">BPJS</option>
+                <option value="DP3AP2KB">DP3AP2KB</option>
               </select>
             </label>
           </div>
@@ -173,6 +177,8 @@
                 <option value="">— pilih —</option>
                 <option value="Puskesmas">Puskesmas</option>
                 <option value="RS">Rumah Sakit</option>
+                <option value="BPJS">BPJS</option>
+                <option value="DP3AP2KB">DP3AP2KB</option>
               </select>
             </label>
             <label class="field">Nama instansi *
@@ -184,8 +190,8 @@
             <label class="field">Nama kapten *
               <input type="text" name="namaKapten" required maxlength="80">
             </label>
-            <label class="field">Nama Kepala Puskesmas / Direktur RS *
-              <input type="text" name="namaKepala" required maxlength="100">
+            <label class="field">Nama Kepala / Direktur / Pimpinan Instansi *
+              <input type="text" name="namaKepala" required maxlength="100" placeholder="Kepala Puskesmas / Direktur RS / Pimpinan">
             </label>
             <label class="field">Nama kontak / manajer *
               <input type="text" name="kontakNama" required maxlength="80">
@@ -214,7 +220,7 @@
             </div>
             <div class="upload" data-upload="fotoKepala">
               <img class="preview" alt="Preview kepala">
-              <div class="lbl">📷 Foto Kepala / Direktur *</div>
+              <div class="lbl">📷 Foto Kepala / Direktur / Pimpinan *</div>
               <div class="name"></div>
               <input type="file" accept="image/jpeg,image/png,image/webp">
               <div class="progress"><i></i></div>
@@ -241,11 +247,6 @@
               <div class="progress"><i></i></div>
             </div>
 
-            <div class="full">
-              <strong style="color:var(--navy)">Daftar pemain (opsional)</strong>
-              <div class="players" id="playersBox" style="margin-top:8px"></div>
-              <button type="button" class="btn btn-outline" id="btnAddPlayer" style="margin-top:8px">+ Tambah pemain</button>
-            </div>
           </div>
 
           <div id="formMsg" hidden></div>
