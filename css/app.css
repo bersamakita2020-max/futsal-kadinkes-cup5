@@ -923,3 +923,19 @@ body.modal-open { overflow: hidden; }
   .admin-card-actions { flex-wrap: wrap; }
   .admin-card-actions .btn { flex: 1 1 calc(50% - 6px); }
 }
+
+/* PDF majalah progress */
+.pdf-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: #e8eef8;
+  overflow: hidden;
+}
+.pdf-progress > i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #033B7E, #1AA6A0, #CCE310);
+  border-radius: inherit;
+  transition: width .2s ease;
+}

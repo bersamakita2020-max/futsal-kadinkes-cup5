@@ -1210,10 +1210,125 @@
   }
 
 
+
+  function closePdfModal() {
+    const m = $('#pdfModal');
+    if (m) m.hidden = true;
+  }
+
+  function openPdfModal() {
+    const m = $('#pdfModal');
+    if (!m) return;
+    const msg = $('#pdfMsg');
+    if (msg) { msg.hidden = true; msg.textContent = ''; }
+    const wrap = $('#pdfProgressWrap');
+    if (wrap) wrap.hidden = true;
+    const bar = $('#pdfProgressBar');
+    if (bar) bar.style.width = '0%';
+    $('#pdfProgressPct').textContent = '0%';
+    m.hidden = false;
+  }
+
+  function setPdfProgress(p) {
+    const wrap = $('#pdfProgressWrap');
+    if (wrap) wrap.hidden = false;
+    const total = Math.max(1, p.total || 1);
+    const cur = Math.min(total, p.current || 0);
+    const pct = Math.round((cur / total) * 100);
+    const bar = $('#pdfProgressBar');
+    if (bar) bar.style.width = pct + '%';
+    const lab = $('#pdfProgressLabel');
+    if (lab) lab.textContent = (p.label || p.phase || 'Memproses') + (p.phase === 'gambar' ? ' (gambar)' : '');
+    const pctEl = $('#pdfProgressPct');
+    if (pctEl) pctEl.textContent = pct + '%';
+  }
+
+  async function loadImageForPdf(team, key) {
+    // Prefer base64 proxy on live; demo/local fetch URL / assets
+    if (!FutsalAPI.isDemo()) {
+      try {
+        const res = await FutsalAPI.post('adminDownloadFile', { token, id: team.id, key });
+        if (res && res.base64) {
+          const mime = res.mime || 'image/jpeg';
+          return 'data:' + mime + ';base64,' + res.base64;
+        }
+      } catch (_) {
+        // fall through to URL if available
+      }
+    }
+    let url = '';
+    if (key === 'logo') url = team.logoUrl || (team.files && team.files.logo && team.files.logo.url) || '';
+    else if (key === 'fotoKapten') url = team.fotoKaptenUrl || '';
+    else if (key === 'jerseyUtama') url = team.jerseyUtamaUrl || '';
+    else if (key === 'jerseyCadangan') url = team.jerseyCadanganUrl || '';
+    else if (key.indexOf('kepala_') === 0) {
+      const ix = parseInt(key.split('_')[1], 10) - 1;
+      const kepala = Array.isArray(team.kepala) ? team.kepala : [];
+      url = (kepala[ix] && kepala[ix].fotoUrl) || '';
+    }
+    if (!url) return null;
+    if (String(url).startsWith('data:')) return url;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(blob);
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function buildMagazinePdf() {
+    const msg = $('#pdfMsg');
+    if (typeof FutsalMagazinePdf === 'undefined' || !FutsalMagazinePdf.generate) {
+      throw new Error('Modul majalah PDF belum dimuat.');
+    }
+    const kategoriFilter = ($('#pdfKategori') && $('#pdfKategori').value) || 'Semua';
+    const statusFilter = ($('#pdfStatus') && $('#pdfStatus').value) || 'aktif';
+    const includeKontak = !!( $('#pdfKontak') && $('#pdfKontak').checked );
+    // Source: current admin teams (aktif list). Ignore UI list filters — PDF has its own.
+    let source = teams.slice();
+    if (!source.length) throw new Error('Tidak ada data tim.');
+
+    setPdfProgress({ phase: 'mulai', current: 0, total: 10, label: 'Menyiapkan data' });
+    const result = await FutsalMagazinePdf.generate({
+      teams: source,
+      kategoriFilter,
+      statusFilter,
+      includeKontak,
+      brand: {
+        kc5: 'assets/kc5_sm.png',
+        hkn: 'assets/hkn62_official.png'
+      },
+      loadImage: loadImageForPdf,
+      onProgress: setPdfProgress
+    });
+    if (!result.teamCount) {
+      throw new Error('Tidak ada tim sesuai filter PDF.');
+    }
+    result.doc.save(result.filename);
+    if (msg) {
+      msg.hidden = false; msg.className = 'alert alert-ok';
+      msg.textContent = 'PDF siap: ' + result.filename + ' · ' + result.teamCount + ' tim · ' + result.pages + ' halaman';
+    }
+    const am = $('#adminMsg');
+    if (am) {
+      am.hidden = false; am.className = 'alert alert-ok';
+      am.textContent = 'Majalah PDF diunduh (' + result.teamCount + ' tim).';
+    }
+    return result;
+  }
+
+
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.12';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.13';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;
@@ -1309,6 +1424,26 @@
       closePreview();
       closeEditModal();
     };
+
+    $$('[data-close-pdf]').forEach(el => el.addEventListener('click', closePdfModal));
+    const btnPdf = $('#btnPdfMajalah');
+    if (btnPdf) btnPdf.onclick = () => openPdfModal();
+    const btnPdfGo = $('#btnPdfGo');
+    if (btnPdfGo) {
+      btnPdfGo.onclick = FutsalAPI.withBusy(btnPdfGo, async () => {
+        try {
+          await buildMagazinePdf();
+          setTimeout(closePdfModal, 900);
+        } catch (e) {
+          const msg = $('#pdfMsg');
+          if (msg) {
+            msg.hidden = false; msg.className = 'alert alert-err';
+            msg.textContent = (e && e.message) || 'Gagal membuat PDF.';
+          }
+          throw e;
+        }
+      });
+    }
 
     $('#btnRefresh').onclick = FutsalAPI.withBusy($('#btnRefresh'), refresh);
     $('#btnExport').onclick = FutsalAPI.withBusy($('#btnExport'), async () => {

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1.0.12">
+<link rel="stylesheet" href="css/app.css?v=1.0.13">
 <link rel="icon" href="icons/favicon.png" type="image/png">
 </head>
 <body>
@@ -54,6 +54,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-outline" id="btnRefresh">Muat ulang</button>
           <button type="button" class="btn btn-outline" id="btnZipAll" title="ZIP semua tim yang tampil di filter">Unduh semua (ZIP)</button>
+          <button type="button" class="btn btn-navy" id="btnPdfMajalah" title="Unduh PDF majalah Putra/Putri">Unduh PDF Majalah</button>
           <button type="button" class="btn btn-primary" id="btnExport">Ekspor CSV</button>
         </div>
       </div>
@@ -278,6 +279,57 @@
   </div>
 </div>
 
+
+<!-- PDF Majalah options -->
+<div id="pdfModal" class="admin-modal" hidden>
+  <div class="admin-modal-backdrop" data-close-pdf></div>
+  <div class="admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="pdfTitle" style="max-width:520px">
+    <header class="admin-modal-head">
+      <div>
+        <h2 id="pdfTitle">Unduh PDF Majalah</h2>
+        <div class="admin-modal-sub">Layout A4 bergaya majalah — terpisah Putra &amp; Putri. Penyusun: Anara Tech.</div>
+      </div>
+      <button type="button" class="btn btn-outline" data-close-pdf>Tutup</button>
+    </header>
+    <div class="admin-modal-body">
+      <label class="field">Kategori
+        <select id="pdfKategori">
+          <option value="Semua">Semua (Putra + Putri)</option>
+          <option value="Putra">Putra saja</option>
+          <option value="Putri">Putri saja</option>
+        </select>
+      </label>
+      <label class="field" style="margin-top:10px">Status
+        <select id="pdfStatus">
+          <option value="aktif">Semua status aktif</option>
+          <option value="verified">Terverifikasi saja</option>
+        </select>
+      </label>
+      <label class="check-row" style="margin-top:12px">
+        <input type="checkbox" id="pdfKontak">
+        <span>Sertakan kontak (internal) — nama &amp; WA</span>
+      </label>
+      <div class="alert alert-warn" style="margin-top:12px">
+        Nomor WA/kontak tidak disertakan secara default. Centang opsi di atas hanya untuk keperluan internal.
+      </div>
+      <div id="pdfProgressWrap" hidden style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--muted);margin-bottom:6px">
+          <span id="pdfProgressLabel">Menyiapkan…</span>
+          <span id="pdfProgressPct">0%</span>
+        </div>
+        <div class="pdf-progress"><i id="pdfProgressBar"></i></div>
+      </div>
+      <div id="pdfMsg" hidden style="margin-top:10px"></div>
+    </div>
+    <footer class="admin-modal-foot">
+      <div class="admin-modal-actions">
+        <button type="button" class="btn btn-outline" data-close-pdf>Batal</button>
+        <button type="button" class="btn btn-navy" id="btnPdfGo">Buat PDF</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
 <!-- Lightbox -->
 <div id="lightbox" class="lightbox" hidden>
   <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Tutup">×</button>
@@ -290,14 +342,16 @@
 
 <footer class="footer">
   <div class="container credits">
-    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.12</span>
+    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.13</span>
   </div>
 </footer>
 
-<script src="js/config.js?v=1.0.12"></script>
-<script src="js/demo-data.js?v=1.0.12"></script>
-<script src="js/api.js?v=1.0.12"></script>
-<script src="assets/vendor/jszip.min.js?v=1.0.12"></script>
-<script src="js/admin.js?v=1.0.12"></script>
+<script src="js/config.js?v=1.0.13"></script>
+<script src="js/demo-data.js?v=1.0.13"></script>
+<script src="js/api.js?v=1.0.13"></script>
+<script src="assets/vendor/jszip.min.js?v=1.0.13"></script>
+<script src="assets/vendor/jspdf.umd.min.js?v=1.0.13"></script>
+<script src="js/magazine-pdf.js?v=1.0.13"></script>
+<script src="js/admin.js?v=1.0.13"></script>
 </body>
 </html>
