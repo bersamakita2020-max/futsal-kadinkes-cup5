@@ -1328,7 +1328,7 @@
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.13';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.14';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;
