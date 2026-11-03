@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#033B7E">
+<meta name="description" content="Kit Faskes Peserta KADINKES CUP Seri V 2026 — unggah logo, jersey, foto kapten & kepala faskes">
+<title>Kit Faskes · KADINKES CUP Seri V 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+<div id="demoBanner" class="demo-banner" hidden>MODE DEMO / CONTOH — data tidak tersimpan ke server. Hubungkan API Apps Script untuk produksi.</div>
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="#/" data-nav>
+      <img src="assets/kc5_sm.png" alt="Logo KADINKES CUP">
+      <div class="brand-text">
+        <strong>KADINKES CUP V</strong>
+        <span>Kit Faskes · HKN Ke-62</span>
+      </div>
+    </a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Menu">☰</button>
+    <nav class="nav-links" id="navLinks">
+      <a href="#/" data-nav>Beranda</a>
+      <a href="#/galeri" data-nav>Galeri Peserta</a>
+      <a href="#/kit" data-nav class="btn btn-primary" style="padding:8px 14px">Kit Faskes</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- BERANDA -->
+  <section class="view active" id="view-home">
+    <div class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="pill-row">
+            <span class="pill">Seri V · 2026</span>
+            <span class="pill ghost">HKN Ke-62</span>
+            <span class="pill ghost" id="pillTanggal">8–12 November 2026</span>
+          </div>
+          <h1>Kit Faskes<br><em>Peserta</em></h1>
+          <p class="lead" id="heroLead">
+            Platform unggah identitas visual tim futsal Puskesmas &amp; Rumah Sakit peserta
+            KADINKES CUP Seri V. Lengkapi logo, jersey, foto kapten, dan foto kepala faskes —
+            file tersimpan aman di Google Drive.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#/kit" data-nav>Unggah Kit Faskes</a>
+            <a class="btn btn-secondary" href="#/galeri" data-nav>Galeri Peserta</a>
+          </div>
+          <div class="logo-strip" aria-label="Logo mitra">
+            <img src="assets/kemenkes_sm.png" alt="Kemenkes">
+            <img src="assets/hkn62_sm.png" alt="HKN Ke-62 — Sehat untuk Semua">
+            <img src="assets/sintang_sm.png" alt="Pemda Sintang">
+            <img src="assets/kc5_h_sm.png" alt="KADINKES CUP">
+          </div>
+        </div>
+        <aside class="hero-card reveal in">
+          <div class="stat"><span>Faskes peserta</span><b id="statTotal">—</b></div>
+          <div class="stat"><span>Puskesmas</span><b id="statPk">—</b></div>
+          <div class="stat"><span>Rumah Sakit</span><b id="statRs">—</b></div>
+          <div class="stat"><span>Kit lengkap</span><b id="statKit">—</b></div>
+          <div class="stat"><span>Kit terverifikasi</span><b id="statOk">—</b></div>
+        </aside>
+      </div>
+    </div>
+
+    <section class="block">
+      <div class="container">
+        <div class="section-head">
+          <h2>Informasi Event</h2>
+          <p>Hanya data yang sudah dikonfirmasi yang ditampilkan.</p>
+        </div>
+        <div class="grid-3 stagger">
+          <article class="feature reveal">
+            <div class="ico">01</div>
+            <h3>Tanggal</h3>
+            <p id="infoTanggal"><strong>8–12 November 2026</strong><br>Jadwal pertandingan utama: 8 &amp; 9 November 2026.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="ico">02</div>
+            <h3>Peserta</h3>
+            <p>Tim futsal dari <strong>Puskesmas</strong> dan <strong>Rumah Sakit</strong> peserta KADINKES CUP (Nakes).</p>
+          </article>
+          <article class="feature reveal">
+            <div class="ico">03</div>
+            <h3>Isi Kit Faskes</h3>
+            <p>Wajib: logo tim, jersey utama, foto kapten, foto kepala faskes. Opsional: jersey cadangan &amp; daftar pemain.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" style="padding-top:0">
+      <div class="container">
+        <div class="section-head" style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap">
+          <div>
+            <h2>Peserta Terbaru</h2>
+            <p>Cuplikan faskes dengan kit yang sudah diverifikasi.</p>
+          </div>
+          <a class="btn btn-outline" href="#/galeri" data-nav>Semua peserta →</a>
+        </div>
+        <div class="grid-3 stagger" id="homeTeams"></div>
+      </div>
+    </section>
+  </section>
+
+  <!-- GALERI -->
+  <section class="view" id="view-galeri">
+    <section class="block">
+      <div class="container">
+        <div class="section-head">
+          <h2>Galeri Peserta</h2>
+          <p>Cari faskes dan lihat kelengkapan kit.</p>
+        </div>
+        <div class="form-card" style="margin-bottom:16px">
+          <div class="form-grid">
+            <label class="field">Cari nama tim / instansi
+              <input type="text" id="qSearch" placeholder="Ketik untuk mencari…">
+            </label>
+            <label class="field">Jenis instansi
+              <select id="qJenis">
+                <option value="">Semua</option>
+                <option value="Puskesmas">Puskesmas</option>
+                <option value="RS">Rumah Sakit</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="grid-3 stagger" id="galeriTeams"></div>
+        <div class="empty" id="galeriEmpty" hidden>Belum ada peserta yang cocok.</div>
+      </div>
+    </section>
+  </section>
+
+  <!-- DETAIL -->
+  <section class="view" id="view-detail">
+    <section class="block">
+      <div class="container" id="detailBox">
+        <div class="empty">Memuat detail kit…</div>
+      </div>
+    </section>
+  </section>
+
+  <!-- KIT FORM -->
+  <section class="view" id="view-daftar">
+    <section class="block">
+      <div class="container" style="max-width:min(860px,100%)">
+        <div class="section-head">
+          <h2>Formulir Kit Faskes</h2>
+          <p>Unggah atau perbarui identitas visual tim. Foto dikompres di perangkat Anda sebelum dikirim.</p>
+        </div>
+        <div class="alert alert-info" id="daftarHint">
+          Setelah unggah pertama, Anda mendapat <strong>kode edit</strong>. Simpan kode itu untuk memperbarui kit tanpa membuat data ganda.
+        </div>
+        <form class="form-card" id="formDaftar" novalidate>
+          <div class="form-grid">
+            <label class="field full">Kode edit (isi jika memperbarui kit yang sudah ada)
+              <input type="text" name="editCode" maxlength="24" placeholder="Contoh: KC5-AB12CD34" autocomplete="off">
+              <span class="hint">Kosongkan untuk unggah kit baru. Kode ditampilkan sekali setelah kiriman pertama.</span>
+            </label>
+            <label class="field">Jenis instansi *
+              <select name="jenisInstansi" required>
+                <option value="">— pilih —</option>
+                <option value="Puskesmas">Puskesmas</option>
+                <option value="RS">Rumah Sakit</option>
+              </select>
+            </label>
+            <label class="field">Nama instansi *
+              <input type="text" name="namaInstansi" required maxlength="120" placeholder="UPTD Puskesmas / RSUD …">
+            </label>
+            <label class="field full">Nama tim *
+              <input type="text" name="namaTim" required maxlength="80" placeholder="Contoh: FC Nakes …">
+            </label>
+            <label class="field">Nama kapten *
+              <input type="text" name="namaKapten" required maxlength="80">
+            </label>
+            <label class="field">Nama Kepala Puskesmas / Direktur RS *
+              <input type="text" name="namaKepala" required maxlength="100">
+            </label>
+            <label class="field">Nama kontak / manajer *
+              <input type="text" name="kontakNama" required maxlength="80">
+            </label>
+            <label class="field">Nomor WA kontak *
+              <input type="tel" name="kontakWA" required maxlength="20" placeholder="08xxxxxxxxxx">
+              <span class="hint">Aktif untuk konfirmasi panitia</span>
+            </label>
+            <label class="field">Warna jersey utama
+              <input type="text" name="warnaJersey" maxlength="60" placeholder="Navy & Lime">
+            </label>
+            <label class="field">Catatan (opsional)
+              <input type="text" name="catatan" maxlength="200" placeholder="Kategori putra/putri, dll.">
+            </label>
+
+            <div class="full"><strong style="color:var(--navy)">Unggah aset kit</strong>
+              <span style="display:block;color:var(--muted);font-size:.82rem;font-weight:500">JPG/PNG/WebP · dikompres otomatis (maks ±1600px). Saat memperbarui, kosongkan file yang tidak diubah.</span>
+            </div>
+
+            <div class="upload" data-upload="fotoKapten">
+              <img class="preview" alt="Preview kapten">
+              <div class="lbl">📷 Foto Kapten *</div>
+              <div class="name"></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp">
+              <div class="progress"><i></i></div>
+            </div>
+            <div class="upload" data-upload="fotoKepala">
+              <img class="preview" alt="Preview kepala">
+              <div class="lbl">📷 Foto Kepala / Direktur *</div>
+              <div class="name"></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp">
+              <div class="progress"><i></i></div>
+            </div>
+            <div class="upload" data-upload="logo">
+              <img class="preview" alt="Preview logo">
+              <div class="lbl">🛡️ Logo Tim * (PNG transparan boleh)</div>
+              <div class="name"></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp">
+              <div class="progress"><i></i></div>
+            </div>
+            <div class="upload" data-upload="jerseyUtama">
+              <img class="preview" alt="Preview jersey">
+              <div class="lbl">👕 Foto / Desain Jersey Utama *</div>
+              <div class="name"></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp">
+              <div class="progress"><i></i></div>
+            </div>
+            <div class="upload" data-upload="jerseyCadangan">
+              <img class="preview" alt="Preview jersey cadangan">
+              <div class="lbl">👕 Jersey Cadangan (opsional)</div>
+              <div class="name"></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp">
+              <div class="progress"><i></i></div>
+            </div>
+
+            <div class="full">
+              <strong style="color:var(--navy)">Daftar pemain (opsional)</strong>
+              <div class="players" id="playersBox" style="margin-top:8px"></div>
+              <button type="button" class="btn btn-outline" id="btnAddPlayer" style="margin-top:8px">+ Tambah pemain</button>
+            </div>
+          </div>
+
+          <div id="formMsg" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-navy" id="btnSubmit">Kirim Kit Faskes</button>
+            <button type="reset" class="btn btn-outline" id="btnReset">Reset</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <strong>KADINKES CUP Seri V 2026</strong> · Kit Faskes Peserta · HKN Ke-62<br>
+    Dinas Kesehatan Kabupaten Sintang
+    <div class="credits">
+      Penyusun: <strong>Anara Tech</strong><br>
+      Versi <span id="versiLabel">1.0.2</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
