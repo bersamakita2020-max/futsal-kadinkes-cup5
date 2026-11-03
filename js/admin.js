@@ -35,6 +35,20 @@
     if (s === 'Putra' || s === 'Putri') return s;
     return '';
   }
+
+  function editHistoryHtml(t) {
+    const rows = Array.isArray(t.editHistory) ? t.editHistory : [];
+    if (!rows.length) {
+      return '<div class="kode-box" style="margin-top:12px"><div class="kode-label">Riwayat Edit</div><div class="meta">Belum ada riwayat edit.</div></div>';
+    }
+    const lis = rows.slice(0, 20).map(r => {
+      const when = esc(r.waktu || r.createdAt || '—');
+      const fields = esc(r.fieldsChanged || '—');
+      const st = esc((r.statusSebelum || '') + ' → ' + (r.statusSesudah || ''));
+      return '<li><strong>' + when + '</strong><br><span class="meta">' + fields + '</span><br><span class="meta">' + st + '</span></li>';
+    }).join('');
+    return '<div class="kode-box" style="margin-top:12px"><div class="kode-label">Riwayat Edit</div><ul class="audit-list">' + lis + '</ul></div>';
+  }
   function kategoriBadge(t) {
     const k = normalizeKategori(t && t.kategoriTim);
     if (k === 'Putri') return '<span class="badge badge-putri">Putri</span>';
@@ -253,8 +267,7 @@
           render();
           if (previewTeam && previewTeam.id === id && !$('#previewModal').hidden) {
             renderPreviewBody(previewTeam);
-            bindKodeControls($('#previewBody'));
-          }
+                  }
           if (code) window.alert('Kode edit baru:\\n\\n' + code + '\\n\\nSudah dicoba disalin ke clipboard. Sampaikan ke faskes.');
         } catch (e) {
           if (msg) {
@@ -300,7 +313,6 @@
                 ' · Kit ' + k.persen + '%' + (k.lengkap ? ' lengkap' : '') +
               '</div>' +
               kitDots(t) +
-              kodeEditHtml(t, { compact: true }) +
             '</div>' +
           '</div>' +
           '<div class="admin-card-actions">' +
@@ -330,7 +342,6 @@
         if (t) await downloadTeamZip(t, btn);
       });
     });
-    bindKodeControls(box);
   }
 
   async function setStatus(id, status, note) {
@@ -441,7 +452,7 @@
             '<div><dt>Diperbarui</dt><dd>' + esc(t.updatedAt || '—') + '</dd></div>' +
           '</dl>' +
           kitDots(t) +
-          '<div style="margin-top:12px">' + kodeEditHtml(t) + '</div>' +
+          editHistoryHtml(t) +
         '</section>' +
         '<section class="form-card">' +
           '<h3 style="margin-top:0;color:var(--navy)">Kontak</h3>' +
@@ -470,7 +481,6 @@
         await downloadOne(t.id, btn.getAttribute('data-dl'), btn);
       });
     });
-    bindKodeControls($('#previewBody'));
     const katSel = $('#previewBody [data-admin-kategori]');
     if (katSel) {
       katSel.onchange = FutsalAPI.withBusy(katSel, async () => {

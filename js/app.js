@@ -36,6 +36,17 @@
     if (k === 'Putra') return '<span class="badge badge-putra">Putra</span>';
     return '<span class="badge badge-kategori-empty">Kategori belum diisi</span>';
   }
+
+  function canEditTeam(t) {
+    const st = String((t && t.status) || 'pending');
+    return st !== 'verified';
+  }
+  function editKitButtonHtml(t) {
+    if (canEditTeam(t)) {
+      return '<a class="btn btn-navy" style="width:100%" href="#/kit?edit=' + encodeURIComponent(t.id) + '" data-nav data-edit-kit="' + esc(t.id) + '">Edit Kit</a>';
+    }
+    return '<button type="button" class="btn btn-outline is-locked" style="width:100%;opacity:.65;cursor:not-allowed" disabled title="Terkunci – sudah diverifikasi" aria-disabled="true">Edit Kit · Terkunci</button>';
+  }
   function kategoriPill(t) {
     const k = normalizeKategori(t && t.kategoriTim);
     if (k === 'Putri') return '<span class="pill" style="background:rgba(236,72,153,.22)">Putri</span>';
@@ -169,7 +180,10 @@
             '<figure>' + imgOrPh(t.fotoKaptenUrl, 'Kapten') + '<figcaption>Kapten: ' + esc(t.namaKapten) + '</figcaption></figure>' +
             '<figure>' + imgOrPh(t.jerseyUtamaUrl, 'Jersey') + '<figcaption>Jersey utama</figcaption></figure>' +
           '</div>' +
-          '<div style="margin-top:12px"><a class="btn btn-outline" style="width:100%" href="#/tim/' + esc(t.id) + '" data-nav>Lihat kit</a></div>' +
+          '<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">' +
+            '<a class="btn btn-outline" style="width:100%" href="#/tim/' + esc(t.id) + '" data-nav>Lihat kit</a>' +
+            editKitButtonHtml(t) +
+          '</div>' +
         '</div>' +
       '</article>'
     );
@@ -292,7 +306,8 @@
           '<figure class="reveal">' + imgOrPh(t.jerseyCadanganUrl || t.logoUrl, t.jerseyCadanganUrl ? 'Cadangan' : 'Logo') +
             '<figcaption>' + (t.jerseyCadanganUrl ? 'Jersey cadangan' : 'Logo tim') + '</figcaption></figure>' +
           '<figure class="reveal">' + imgOrPh(t.logoUrl, 'Logo') + '<figcaption>Logo tim</figcaption></figure>' +
-        '</div>';
+        '</div>' +
+        '<div class="form-actions" style="margin-top:8px">' + editKitButtonHtml(t) + '</div>';
       observeReveal(box);
     } catch (e) {
       box.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div><p><a href="#/galeri" data-nav>← Galeri</a></p>';
@@ -511,7 +526,7 @@
     // jangan isi uploads[key] — biarkan server mempertahankan file lama
   }
 
-  function prefillFormFromTeam(team, editCode) {
+  function prefillFormFromTeam(team) {
     const form = $('#formDaftar');
     if (!form || !team) return;
     form.reset();
@@ -525,16 +540,17 @@
       const el = form.elements[name];
       if (el) el.value = val == null ? '' : String(val);
     };
-    set('editCode', editCode || '');
+    set('teamId', team.id || '');
     set('jenisInstansi', team.jenisInstansi || '');
     set('namaInstansi', team.namaInstansi || '');
     set('namaTim', team.namaTim || '');
     set('kategoriTim', normalizeKategori(team.kategoriTim) || '');
     set('namaKapten', team.namaKapten || '');
+    // publik tidak punya kontak — biarkan kosong; server pertahankan nilai lama jika kosong
     set('kontakNama', team.kontakNama || '');
     set('kontakWA', team.kontakWA || '');
     set('warnaJersey', team.warnaJersey || '');
-    set('catatan', team.catatan || '');
+    set('catatan', ''); // catatan tidak diekspos publik
     const chk = $('#chkTimGabungan');
     const anggotaWrap = $('#anggotaWrap');
     if (chk) {
@@ -561,7 +577,7 @@
     if (hint) {
       hint.className = 'alert alert-ok';
       hint.innerHTML = 'Mode pembaruan aktif untuk <strong>' + esc(team.namaTim || team.id) +
-        '</strong>. Kode edit sudah terisi. Ubah field/foto yang perlu, lalu kirim — data tidak digandakan.';
+        '</strong>. Ubah field/foto yang perlu, lalu simpan — data tidak digandakan. Kit terverifikasi tidak bisa diedit.';
     }
     const btn = $('#btnSubmit');
     if (btn) btn.textContent = 'Simpan Pembaruan Kit';
@@ -595,155 +611,35 @@
     return qi === q.length ? 20 + score : 0;
   }
 
-  function setupCekCombo() {
-    const input = $('#cekIdentifikasi');
-    const list = $('#cekSuggest');
-    const wrap = $('#cekCombo');
-    if (!input || !list || !wrap) return;
-    let active = -1;
-    let items = [];
 
-    function hide() {
-      list.hidden = true;
-      list.innerHTML = '';
-      input.setAttribute('aria-expanded', 'false');
-      active = -1;
-    }
-    function show(rows) {
-      items = rows;
-      active = rows.length ? 0 : -1;
-      if (!rows.length) {
-        list.innerHTML = '<li class="combo-empty" role="presentation">Tidak ada tim cocok</li>';
-        list.hidden = false;
-        input.setAttribute('aria-expanded', 'true');
+  let lastPrefillId = '';
+  async function maybePrefillEditFromHash() {
+    const hash = location.hash || '';
+    const m = hash.match(/[?&]edit=([^&]+)/);
+    const id = m ? decodeURIComponent(m[1]) : '';
+    if (!id) return;
+    if (lastPrefillId === id && ($('#teamId') && $('#teamId').value === id)) return;
+    try {
+      let t = cacheTeams.find(x => x.id === id);
+      if (!t) {
+        const res = await FutsalAPI.get('getTeam', { id });
+        t = res.team;
+      }
+      if (!t) throw new Error('Tim tidak ditemukan.');
+      if (!canEditTeam(t)) {
+        const hint = $('#daftarHint');
+        if (hint) {
+          hint.className = 'alert alert-warn';
+          hint.innerHTML = 'Kit <strong>' + esc(t.namaTim || id) + '</strong> sudah diverifikasi dan terkunci. Hubungi panitia bila perlu perubahan.';
+        }
         return;
       }
-      list.innerHTML = rows.map((t, i) =>
-        '<li role="option" id="cekOpt' + i + '" class="combo-item' + (i === 0 ? ' is-active' : '') + '" data-idx="' + i + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '">' +
-          '<span class="combo-logo"><img src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt=""></span>' +
-          '<span class="combo-meta">' +
-            '<strong>' + esc(t.namaTim || '—') + '</strong>' +
-            '<span class="combo-sub">' + esc(t.namaInstansi || '') + ' · ' + esc(jenisLabel(t.jenisInstansi)) +
-              (normalizeKategori(t.kategoriTim) ? ' · ' + esc(normalizeKategori(t.kategoriTim)) : '') +
-            '</span>' +
-            '<span class="combo-id">' + esc(t.id || '') + '</span>' +
-          '</span>' +
-          kategoriBadge(t) +
-        '</li>'
-      ).join('');
-      list.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-      list.querySelectorAll('.combo-item').forEach(el => {
-        el.addEventListener('mousedown', (e) => { e.preventDefault(); pick(+el.getAttribute('data-idx')); });
-      });
+      prefillFormFromTeam(t);
+      lastPrefillId = id;
+    } catch (e) {
+      const hint = $('#daftarHint');
+      if (hint) { hint.className = 'alert alert-err'; hint.textContent = e.message || 'Gagal memuat data untuk edit.'; }
     }
-    function pick(idx) {
-      const t = items[idx];
-      if (!t) return;
-      input.value = t.id || t.namaTim || '';
-      hide();
-      input.focus();
-    }
-    function filter() {
-      const q = input.value.trim();
-      if (!q) { hide(); return; }
-      const scored = (cacheTeams || []).map(t => {
-        const score = Math.max(
-          fuzzyScore(q, t.namaTim),
-          fuzzyScore(q, t.id),
-          fuzzyScore(q, t.namaInstansi),
-          fuzzyScore(q, t.namaKapten)
-        );
-        return { t, score };
-      }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8).map(x => x.t);
-      show(scored);
-    }
-    function move(delta) {
-      if (list.hidden || !items.length) return;
-      active = (active + delta + items.length) % items.length;
-      list.querySelectorAll('.combo-item').forEach((el, i) => {
-        el.classList.toggle('is-active', i === active);
-        el.setAttribute('aria-selected', i === active ? 'true' : 'false');
-      });
-      const el = list.querySelector('.combo-item.is-active');
-      if (el) el.scrollIntoView({ block: 'nearest' });
-    }
-
-    input.addEventListener('input', () => {
-      if (!cacheTeams.length) loadTeams().then(filter).catch(() => filter());
-      else filter();
-    });
-    input.addEventListener('focus', () => {
-      if (input.value.trim()) {
-        if (!cacheTeams.length) loadTeams().then(filter).catch(() => filter());
-        else filter();
-      }
-    });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
-      else if (e.key === 'Enter' && !list.hidden && active >= 0) { e.preventDefault(); pick(active); }
-      else if (e.key === 'Escape') hide();
-    });
-    document.addEventListener('click', (e) => {
-      if (!wrap.contains(e.target)) hide();
-    });
-  }
-
-  function setupCekKode() {
-    const form = $('#formCekKode');
-    if (!form) return;
-    const btn = $('#btnCekKode');
-    const goHome = () => { resetCekUI(); location.hash = '#/'; };
-
-    $('#btnCekBatal') && $('#btnCekBatal').addEventListener('click', goHome);
-    $('#btnCekKeluar') && $('#btnCekKeluar').addEventListener('click', goHome);
-
-    $('#btnEditKit') && $('#btnEditKit').addEventListener('click', FutsalAPI.withBusy($('#btnEditKit'), async () => {
-      if (!ownerSession || !ownerSession.team) {
-        const msg = $('#cekMsg');
-        if (msg) { msg.hidden = false; msg.className = 'alert alert-err'; msg.textContent = 'Belum ada data kit tervalidasi.'; }
-        return;
-      }
-      prefillFormFromTeam(ownerSession.team, ownerSession.editCode);
-      location.hash = '#/kit';
-      setTimeout(() => {
-        const formEl = $('#formDaftar');
-        if (formEl) window.scrollTo({ top: formEl.offsetTop - 70, behavior: 'smooth' });
-      }, 120);
-    }));
-
-    form.addEventListener('submit', FutsalAPI.withBusy(btn, async (e) => {
-      e.preventDefault();
-      const msg = $('#cekMsg');
-      const wrap = $('#cekResultWrap');
-      msg.hidden = true;
-      wrap.hidden = true;
-      const identifikasi = String(($('#cekIdentifikasi') && $('#cekIdentifikasi').value) || '').trim();
-      const editCode = String(($('#cekEditCode') && $('#cekEditCode').value) || '').trim();
-      if (!identifikasi || !editCode) {
-        msg.hidden = false; msg.className = 'alert alert-err';
-        msg.textContent = 'Isi identitas tim dan kode edit.';
-        return;
-      }
-      try {
-        const res = await FutsalAPI.post('cekKodeEdit', { identifikasi, editCode, id: identifikasi, namaTim: identifikasi });
-        if (!res || !res.team) throw new Error('Respons tidak memuat data kit.');
-        ownerSession = { team: res.team, editCode: res.editCode || editCode };
-        renderOwnerSummary(res.team);
-        wrap.hidden = false;
-        msg.hidden = false; msg.className = 'alert alert-ok';
-        msg.textContent = res.message || 'Kode edit valid.';
-        setTimeout(() => {
-          wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 60);
-      } catch (err) {
-        ownerSession = null;
-        wrap.hidden = true;
-        msg.hidden = false; msg.className = 'alert alert-err';
-        msg.textContent = err.message || 'Gagal memeriksa kode edit.';
-      }
-    }));
   }
 
   function setupForm() {
@@ -766,7 +662,7 @@
       const msg = $('#formMsg');
       msg.hidden = true;
       const fd = new FormData(form);
-      const editCode = String(fd.get('editCode') || '').trim();
+      const teamId = String(fd.get('teamId') || '').trim();
       const timGabungan = !!$('#chkTimGabungan').checked;
       const anggotaFaskes = String(fd.get('anggotaFaskes') || '').trim();
       if (timGabungan && !anggotaFaskes) {
@@ -788,7 +684,7 @@
         }
       }
       const requiredUploads = ['fotoKapten', 'logo', 'jerseyUtama'];
-      if (!editCode) {
+      if (!teamId) {
         for (const k of requiredUploads) {
           if (!uploads[k] || !uploads[k].dataUrl) {
             msg.hidden = false; msg.className = 'alert alert-err';
@@ -809,13 +705,18 @@
         return;
       }
       const wa = String(fd.get('kontakWA') || '').replace(/\D/g, '');
-      if (wa.length < 10) {
+      if (!teamId && wa.length < 10) {
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = 'Nomor WA tidak valid.';
+        return;
+      }
+      if (teamId && wa && wa.length < 10) {
         msg.hidden = false; msg.className = 'alert alert-err';
         msg.textContent = 'Nomor WA tidak valid.';
         return;
       }
       const payload = {
-        editCode: editCode || null,
+        id: teamId || null,
         jenisInstansi: fd.get('jenisInstansi'),
         namaInstansi: String(fd.get('namaInstansi') || '').trim(),
         namaTim: String(fd.get('namaTim') || '').trim(),
@@ -842,7 +743,7 @@
       try {
         let res;
         const size = estimatePayloadBytes(payload);
-        if (size > SAFE && editCode) {
+        if (size > SAFE && teamId) {
           // kirim metadata dulu tanpa file besar, lalu unggah berurutan
           const meta = Object.assign({}, payload, { files: {} });
           res = await FutsalAPI.post('saveKit', meta);
@@ -857,12 +758,12 @@
               }
             }
             await FutsalAPI.post('uploadKitFile', {
-              editCode, key, file: payload.files[key], ...extra
+              id: teamId, key, file: payload.files[key], ...extra
             });
           }
           msg.hidden = false; msg.className = 'alert alert-ok';
           msg.textContent = (res.message || 'Kit diperbarui.') + ' (unggah bertahap OK)';
-        } else if (size > SAFE && !editCode) {
+        } else if (size > SAFE && !teamId) {
           // kit baru: kirim tanpa kepala photos ekstra dulu — tetap kirim kepala_1 + aset inti; sisa berurutan
           const firstFiles = {
             fotoKapten: payload.files.fotoKapten,
@@ -873,35 +774,29 @@
           };
           const firstPayload = Object.assign({}, payload, { files: firstFiles });
           res = await FutsalAPI.post('saveKit', firstPayload);
-          const code = res.editCode;
+          const newId = res.id;
           for (let i = 2; i <= kepala.length; i++) {
             const key = 'kepala_' + i;
-            if (payload.files[key]) {
+            if (payload.files[key] && newId) {
               await FutsalAPI.post('uploadKitFile', {
-                editCode: code, key, file: payload.files[key],
+                id: newId, key, file: payload.files[key],
                 nama: kepala[i - 1].nama, instansi: kepala[i - 1].instansi
               });
             }
           }
           msg.hidden = false; msg.className = 'alert alert-ok';
           let text = res.message || 'Kit tersimpan.';
-          if (code) {
-            text += ' Kode edit Anda (simpan sekarang): ' + code;
-            try { localStorage.setItem('futsal_kc5_edit_' + (res.id || 'last'), code); } catch (_) {}
-          }
+          if (newId) text += ' ID: ' + newId;
           msg.textContent = text;
         } else {
           res = await FutsalAPI.post('saveKit', payload);
           msg.hidden = false; msg.className = 'alert alert-ok';
           let text = res.message || 'Kit tersimpan.';
-          if (res.editCode) {
-            text += ' Kode edit Anda (simpan sekarang): ' + res.editCode;
-            try { localStorage.setItem('futsal_kc5_edit_' + (res.id || 'last'), res.editCode); } catch (_) {}
-          }
+          if (res.id && !res.updated) text += ' ID: ' + res.id;
           if (res.kit) text += ' · Kelengkapan ' + res.kit.persen + '%';
           msg.textContent = text;
         }
-        if (!editCode) {
+        if (!teamId) {
           form.reset();
           Object.keys(uploads).forEach(k => delete uploads[k]);
           $$('.upload').forEach(u => { u.classList.remove('has-file'); $('.name', u).textContent = ''; });
@@ -920,6 +815,14 @@
       Object.keys(uploads).forEach(k => delete uploads[k]);
       $$('.upload').forEach(u => { u.classList.remove('has-file'); $('.name', u).textContent = ''; });
       $('#formMsg').hidden = true;
+      const tid = $('#teamId'); if (tid) tid.value = '';
+      lastPrefillId = '';
+      const hint = $('#daftarHint');
+      if (hint) {
+        hint.className = 'alert alert-info';
+        hint.innerHTML = 'Unggah kit baru, atau buka <strong>Galeri → Edit Kit</strong> untuk memperbarui data selama belum diverifikasi (tanpa data ganda).';
+      }
+      const btn = $('#btnSubmit'); if (btn) btn.textContent = 'Kirim Kit Faskes';
       $('#kepalaList').innerHTML = '';
       kepalaCount = 0;
       setTimeout(() => { addKepalaRow(); anggotaWrap.hidden = true; }, 0);
@@ -930,21 +833,21 @@
     home: $('#view-home'),
     galeri: $('#view-galeri'),
     detail: $('#view-detail'),
-    daftar: $('#view-daftar'),
-    cek: $('#view-cek')
+    daftar: $('#view-daftar')
   };
 
   function setActiveNav(path) {
     $$('#navLinks a[data-nav]').forEach(a => {
       const href = a.getAttribute('href');
-      const map = { home: '#/', galeri: '#/galeri', kit: '#/kit', daftar: '#/kit', cek: '#/cek-kode' };
+      const map = { home: '#/', galeri: '#/galeri', kit: '#/kit', daftar: '#/kit' };
       a.classList.toggle('active', href === map[path] || (path === 'home' && href === '#/'));
     });
   }
 
   async function route() {
     const hash = location.hash || '#/';
-    const parts = hash.replace(/^#\/?/, '').split('/');
+    const pathOnly = hash.replace(/^#\/?/, '').split('?')[0];
+    const parts = pathOnly.split('/');
     const page = parts[0] || 'home';
     Object.values(views).forEach(v => v.classList.remove('active'));
     $('#navLinks').classList.remove('open');
@@ -953,10 +856,9 @@
       views.galeri.classList.add('active'); setActiveNav('galeri');
       if (!cacheTeams.length) await loadTeams();
       renderGaleri();
-    } else if (page === 'cek-kode' || page === 'cek') {
-      views.cek.classList.add('active'); setActiveNav('cek');
     } else if (page === 'kit' || page === 'daftar') {
       views.daftar.classList.add('active'); setActiveNav('kit');
+      await maybePrefillEditFromHash();
     } else if (page === 'tim' && parts[1]) {
       views.detail.classList.add('active'); setActiveNav('galeri');
       await renderDetail(parts[1]);
@@ -971,15 +873,13 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.8';
+    $('#versiLabel').textContent = C.VERSI || '1.0.9';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);
     $('#qJenis') && $('#qJenis').addEventListener('change', renderGaleri);
     $('#qKategori') && $('#qKategori').addEventListener('change', renderGaleri);
     setupForm();
-    setupCekCombo();
-    setupCekKode();
     window.addEventListener('hashchange', route);
     route();
   }

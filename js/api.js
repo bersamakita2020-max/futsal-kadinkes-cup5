@@ -75,41 +75,76 @@
           case 'stats':
             resolve({ ok: true, stats: D.stats, demo: true });
             break;
-          case 'listTeams':
-            resolve({ ok: true, teams: D.teams.filter(t => t.status === 'verified' || payload?.includePending), demo: true });
+          case 'listTeams': {
+            let teams = D.teams.slice();
+            if (payload && (payload.onlyVerified === true || payload.onlyVerified === 'true')) {
+              teams = teams.filter(t => t.status === 'verified');
+            }
+            // strip kontak for public demo list
+            teams = teams.map(t => {
+              const x = Object.assign({}, t, { canEdit: t.status !== 'verified' });
+              delete x.kontakWA; delete x.kontakNama; delete x.catatan; delete x.editCode; delete x.hasEditCode;
+              return x;
+            });
+            resolve({ ok: true, teams, demo: true });
             break;
+          }
           case 'getTeam': {
             const t = D.teams.find(x => x.id === (payload && payload.id));
             if (!t) resolve({ ok: false, error: 'Tim tidak ditemukan (demo).' });
-            else resolve({ ok: true, team: t, demo: true });
+            else {
+              const x = Object.assign({}, t, { canEdit: t.status !== 'verified' });
+              delete x.kontakWA; delete x.kontakNama; delete x.catatan; delete x.editCode; delete x.hasEditCode;
+              resolve({ ok: true, team: x, demo: true });
+            }
             break;
           }
           case 'register':
           case 'saveKit': {
-            const code = (payload && payload.editCode) ? String(payload.editCode).trim() : '';
-            const id = code ? ('DEMO-UPD-' + Date.now()) : ('DEMO-NEW-' + Date.now());
-            const editCode = code || ('KC5-' + Math.random().toString(36).slice(2, 10).toUpperCase());
+            const updateId = String((payload && (payload.id || payload.teamId)) || '').trim();
             const files = (payload && payload.files) || {};
             const has = (k) => !!(files[k] && files[k].dataUrl);
             const kepalaIn = Array.isArray(payload && payload.kepala) ? payload.kepala : [];
             const hasKepalaFoto = has('fotoKepala') || has('kepala_1') || kepalaIn.some((_, i) => has('kepala_' + (i + 1)));
-            const logo = has('logo') || !!code;
-            const jerseyUtama = has('jerseyUtama') || !!code;
-            const fotoKapten = has('fotoKapten') || !!code;
-            const fotoKepala = hasKepalaFoto || !!code;
+            if (updateId) {
+              const row = D.teams.find(x => x.id === updateId);
+              if (!row) { resolve({ ok: false, error: 'Tim tidak ditemukan.' }); break; }
+              if (row.status === 'verified') {
+                resolve({ ok: false, error: 'Kit sudah diverifikasi — terkunci. Hubungi panitia jika perlu perubahan.' });
+                break;
+              }
+              Object.assign(row, {
+                jenisInstansi: payload.jenisInstansi || row.jenisInstansi,
+                namaInstansi: payload.namaInstansi || row.namaInstansi,
+                namaTim: payload.namaTim || row.namaTim,
+                kategoriTim: payload.kategoriTim || row.kategoriTim,
+                namaKapten: payload.namaKapten || row.namaKapten,
+                status: 'pending',
+                canEdit: true
+              });
+              if (payload.kontakNama) row.kontakNama = payload.kontakNama;
+              if (payload.kontakWA) row.kontakWA = payload.kontakWA;
+              const logo = has('logo') || !!row.logoUrl;
+              const jerseyUtama = has('jerseyUtama') || !!row.jerseyUtamaUrl;
+              const fotoKapten = has('fotoKapten') || !!row.fotoKaptenUrl;
+              const fotoKepala = hasKepalaFoto || !!(row.kepala && row.kepala[0] && row.kepala[0].fotoUrl);
+              const n = [logo, jerseyUtama, fotoKapten, fotoKepala].filter(Boolean).length;
+              const kit = { logo, jerseyUtama, fotoKapten, fotoKepala, jerseyCadangan: has('jerseyCadangan') || !!row.jerseyCadanganUrl, lengkap: n===4, persen: Math.round(n/4*100), jumlahKepala: Math.max(kepalaIn.length, row.kepala && row.kepala.length || 0, fotoKepala ? 1 : 0) };
+              row.kit = kit;
+              resolve({ ok: true, demo: true, id: updateId, updated: true, kit, kepala: kepalaIn.length ? kepalaIn : row.kepala,
+                message: 'MODE DEMO: kit diperbarui. Menunggu verifikasi ulang.' });
+              break;
+            }
+            const id = 'DEMO-NEW-' + Date.now();
+            const logo = has('logo');
+            const jerseyUtama = has('jerseyUtama');
+            const fotoKapten = has('fotoKapten');
+            const fotoKepala = hasKepalaFoto;
             const n = [logo, jerseyUtama, fotoKapten, fotoKepala].filter(Boolean).length;
             const kit = { logo, jerseyUtama, fotoKapten, fotoKepala, jerseyCadangan: has('jerseyCadangan'), lengkap: n===4, persen: Math.round(n/4*100), jumlahKepala: Math.max(kepalaIn.length, fotoKepala ? 1 : 0) };
             resolve({
-              ok: true,
-              demo: true,
-              id: id,
-              editCode: code ? undefined : editCode,
-              updated: !!code,
-              kit: kit,
-              kepala: kepalaIn,
-              message: code
-                ? 'MODE DEMO: kit diperbarui (tidak disimpan permanen).'
-                : 'MODE DEMO: kit baru (tidak disimpan). Simpan kode edit untuk pembaruan nanti.'
+              ok: true, demo: true, id, updated: false, kit, kepala: kepalaIn,
+              message: 'MODE DEMO: kit baru tersimpan. Edit lewat Galeri selama belum diverifikasi. ID: ' + id
             });
             break;
           }
@@ -153,6 +188,13 @@
             break;
           }
           case 'uploadKitFile': {
+            const uid = String((payload && (payload.id || payload.teamId)) || '');
+            if (uid) {
+              const row = D.teams.find(x => x.id === uid);
+              if (row && row.status === 'verified') {
+                resolve({ ok: false, error: 'Kit sudah diverifikasi — terkunci.' }); break;
+              }
+            }
             resolve({ ok: true, demo: true, key: payload && payload.key, url: 'assets/sintang_sm.png', message: 'MODE DEMO: file diterima.' });
             break;
           }
@@ -173,7 +215,7 @@
             if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
             const tt = D.teams.find(x => x.id === (payload && payload.id));
             if (!tt) resolve({ ok: false, error: 'Peserta tidak ditemukan.' });
-            else resolve({ ok: true, team: tt, demo: true });
+            else resolve({ ok: true, team: Object.assign({}, tt, { editHistory: tt.editHistory || [] }), demo: true });
             break;
           }
           case 'adminDownloadFile': {

@@ -162,7 +162,7 @@ window.FUTSAL_DEMO = {
     },
     {
       id: 'DEMO-006',
-      status: 'verified',
+      status: 'rejected',
       jenisInstansi: 'Labkesda',
       namaInstansi: 'Labkesda CONTOH Kabupaten Sintang',
       namaTim: 'Labkesda CONTOH FC',

@@ -33,7 +33,6 @@
     <nav class="nav-links" id="navLinks">
       <a href="#/" data-nav>Beranda</a>
       <a href="#/galeri" data-nav>Galeri Peserta</a>
-      <a href="#/cek-kode" data-nav>Cek Kode Edit</a>
       <a href="#/kit" data-nav class="btn btn-primary" style="padding:8px 14px">Kit Faskes</a>
       <a href="admin.html">Admin</a>
     </nav>
@@ -59,7 +58,6 @@
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#/kit" data-nav>Unggah Kit Faskes</a>
-            <a class="btn btn-secondary" href="#/cek-kode" data-nav>Cek Kode Edit</a>
             <a class="btn btn-secondary" href="#/galeri" data-nav>Galeri Peserta</a>
           </div>
           <div class="logo-strip" aria-label="Logo mitra">
@@ -171,52 +169,6 @@
   </section>
 
 
-  <!-- CEK KODE EDIT -->
-  <section class="view" id="view-cek">
-    <section class="block">
-      <div class="container" style="max-width:min(860px,100%)">
-        <div class="section-head">
-          <h2>Cek Kode Edit</h2>
-          <p>Masukkan identitas tim dan kode edit untuk meninjau data kit Anda, lalu lanjutkan ke formulir edit.</p>
-        </div>
-        <div class="alert alert-info" id="cekHint">
-          Kode edit diberikan sekali setelah unggah pertama. Identitas bisa berupa <strong>ID Tim</strong> (contoh KC5-…) atau <strong>Nama Tim</strong>.
-        </div>
-        <form class="form-card reveal in" id="formCekKode" novalidate>
-          <div class="form-grid">
-            <label class="field full">ID Tim atau Nama Tim *
-              <div class="combo" id="cekCombo">
-                <input type="text" name="identifikasi" id="cekIdentifikasi" required maxlength="120" placeholder="Ketik nama tim / ID untuk mencari…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cekSuggest" aria-haspopup="listbox">
-                <ul class="combo-list" id="cekSuggest" role="listbox" hidden></ul>
-              </div>
-              <span class="hint">Ketik sebagian nama atau ID — pilih dari daftar yang muncul</span>
-            </label>
-            <label class="field full">Kode edit *
-              <input type="text" name="editCode" id="cekEditCode" required maxlength="24" placeholder="Contoh: KC5-AB12CD34" autocomplete="off" spellcheck="false">
-            </label>
-          </div>
-          <div id="cekMsg" hidden></div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-navy" id="btnCekKode">Cek Kode Edit</button>
-            <button type="button" class="btn btn-outline" id="btnCekBatal">Batal / Keluar</button>
-          </div>
-        </form>
-
-        <div id="cekResultWrap" hidden>
-          <div class="section-head" style="margin-top:28px">
-            <h2>Ringkasan Kit Anda</h2>
-            <p>Data berikut hanya tampil setelah kode edit tervalidasi. Tinjau lalu tekan <strong>Edit Kit</strong> untuk memperbarui.</p>
-          </div>
-          <div id="cekResultCard" class="owner-summary reveal"></div>
-          <div class="form-actions" style="margin-top:16px;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary" id="btnEditKit" style="min-width:min(220px,100%)">Edit Kit</button>
-            <button type="button" class="btn btn-outline" id="btnCekKeluar">Batal / Keluar</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </section>
-
   <!-- KIT FORM -->
   <section class="view" id="view-daftar">
     <section class="block">
@@ -226,14 +178,11 @@
           <p>Unggah atau perbarui identitas visual tim. Foto dikompres di perangkat Anda sebelum dikirim.</p>
         </div>
         <div class="alert alert-info" id="daftarHint">
-          Setelah unggah pertama, Anda mendapat <strong>kode edit</strong>. Simpan kode itu untuk memperbarui kit tanpa membuat data ganda.
+          Unggah kit baru, atau buka <strong>Galeri → Edit Kit</strong> untuk memperbarui data selama belum diverifikasi (tanpa data ganda).
         </div>
         <form class="form-card" id="formDaftar" novalidate>
+          <input type="hidden" name="teamId" id="teamId" value="">
           <div class="form-grid">
-            <label class="field full">Kode edit (isi jika memperbarui kit yang sudah ada)
-              <input type="text" name="editCode" maxlength="24" placeholder="Contoh: KC5-AB12CD34" autocomplete="off">
-              <span class="hint">Kosongkan untuk unggah kit baru. Kode ditampilkan sekali setelah kiriman pertama.</span>
-            </label>
             <label class="field">Jenis instansi *
               <select name="jenisInstansi" required>
                 <option value="">— pilih —</option>
