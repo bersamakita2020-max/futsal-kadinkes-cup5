@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1.0.9">
+<link rel="stylesheet" href="css/app.css?v=1.0.10">
 <link rel="icon" href="icons/favicon.png" type="image/png">
 </head>
 <body>
@@ -50,13 +50,17 @@
       <div class="section-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end">
         <div>
           <h2>Verifikasi Kit Faskes</h2>
-          <p>Preview unggahan, unduh file, verifikasi / tolak.</p>
+          <p>Preview unggahan, unduh file, verifikasi / tolak / hapus (arsip).</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-outline" id="btnRefresh">Muat ulang</button>
           <button type="button" class="btn btn-outline" id="btnZipAll" title="ZIP semua tim yang tampil di filter">Unduh semua (ZIP)</button>
           <button type="button" class="btn btn-primary" id="btnExport">Ekspor CSV</button>
         </div>
+      </div>
+      <div class="admin-tabs" role="tablist" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button type="button" class="btn btn-navy" id="tabAktif" data-admin-tab="aktif" aria-selected="true">Tim Aktif</button>
+        <button type="button" class="btn btn-outline" id="tabArsip" data-admin-tab="arsip" aria-selected="false">Arsip</button>
       </div>
       <div class="form-card" style="margin-bottom:14px">
         <div class="form-grid">
@@ -100,6 +104,7 @@
       </div>
       <div id="adminMsg" hidden></div>
       <div id="adminList" class="admin-list" aria-live="polite"></div>
+      <div id="arsipList" class="admin-list" hidden aria-live="polite"></div>
       <!-- adminRows: kompatibilitas jika admin.js lama (cache) masih mencari #adminRows -->
       <div id="adminRows" hidden aria-hidden="true"></div>
     </section>
@@ -128,6 +133,41 @@
         <button type="button" class="btn btn-outline" id="btnPreviewPending">Tunda</button>
         <a class="btn btn-outline" id="btnPreviewEdit" href="index.html#/kit" target="_blank" rel="noopener">Formulir / Edit</a>
         <button type="button" class="btn btn-navy" id="btnPreviewZip">Unduh Semua Kit (ZIP)</button>
+        <button type="button" class="btn btn-danger" id="btnPreviewHapus">Hapus</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- Hapus confirm modal -->
+<div id="hapusModal" class="admin-modal" hidden>
+  <div class="admin-modal-backdrop" data-close-hapus></div>
+  <div class="admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="hapusTitle" style="max-width:520px">
+    <header class="admin-modal-head">
+      <div>
+        <h2 id="hapusTitle" style="color:var(--danger)">Hapus Tim?</h2>
+        <div class="admin-modal-sub">Tim dipindah ke Arsip. Folder Drive masuk tempat sampah (±30 hari bisa dipulihkan). Tidak dihapus permanen.</div>
+      </div>
+      <button type="button" class="btn btn-outline" data-close-hapus>Batal</button>
+    </header>
+    <div class="admin-modal-body">
+      <div class="alert alert-warn" id="hapusWarn">
+        Ketik <strong>nama tim</strong> persis dan masukkan <strong>PIN admin</strong> untuk mengonfirmasi.
+      </div>
+      <p style="margin:0 0 10px">Nama tim yang harus diketik:</p>
+      <p style="margin:0 0 14px;font-weight:800;color:var(--navy);font-size:1.05rem" id="hapusNamaTarget">—</p>
+      <label class="field">Ketik nama tim *
+        <input type="text" id="hapusNamaInput" maxlength="120" autocomplete="off" placeholder="Salin nama tim di atas">
+      </label>
+      <label class="field" style="margin-top:10px">PIN admin *
+        <input type="password" id="hapusPinInput" maxlength="32" autocomplete="current-password">
+      </label>
+      <div id="hapusMsg" hidden style="margin-top:10px"></div>
+    </div>
+    <footer class="admin-modal-foot">
+      <div class="admin-modal-actions">
+        <button type="button" class="btn btn-outline" data-close-hapus>Batal</button>
+        <button type="button" class="btn btn-danger" id="btnHapusConfirm">Ya, Hapus ke Arsip</button>
       </div>
     </footer>
   </div>
@@ -145,14 +185,14 @@
 
 <footer class="footer">
   <div class="container credits">
-    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.9</span>
+    Penyusun: <strong>Anara Tech</strong> · Admin v<span id="adminVersi">1.0.10</span>
   </div>
 </footer>
 
-<script src="js/config.js?v=1.0.9"></script>
-<script src="js/demo-data.js?v=1.0.9"></script>
-<script src="js/api.js?v=1.0.9"></script>
-<script src="assets/vendor/jszip.min.js?v=1.0.9"></script>
-<script src="js/admin.js?v=1.0.9"></script>
+<script src="js/config.js?v=1.0.10"></script>
+<script src="js/demo-data.js?v=1.0.10"></script>
+<script src="js/api.js?v=1.0.10"></script>
+<script src="assets/vendor/jszip.min.js?v=1.0.10"></script>
+<script src="js/admin.js?v=1.0.10"></script>
 </body>
 </html>

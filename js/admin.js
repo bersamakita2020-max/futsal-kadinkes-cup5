@@ -4,8 +4,11 @@
   const C = window.FUTSAL_CONFIG;
   let token = sessionStorage.getItem(C.ADMIN_SESSION_KEY || 'futsal_kc5_admin_token') || '';
   let teams = [];
+  let arsipTeams = [];
   let previewTeam = null;
   let lightboxCtx = null;
+  let hapusTarget = null;
+  let adminTab = 'aktif';
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -321,6 +324,7 @@
             '<button type="button" class="btn btn-outline" data-act="pending">Tunda</button>' +
             '<button type="button" class="btn btn-danger" data-act="rejected">Tolak</button>' +
             '<button type="button" class="btn btn-outline" data-zip-one>ZIP</button>' +
+            '<button type="button" class="btn btn-danger" data-hapus>Hapus</button>' +
           '</div>' +
         '</article>'
       );
@@ -341,6 +345,9 @@
         const t = teams.find(x => x.id === id);
         if (t) await downloadTeamZip(t, btn);
       });
+    });
+    box.querySelectorAll('[data-hapus]').forEach(btn => {
+      btn.onclick = () => openHapusModal(btn.closest('[data-id]').getAttribute('data-id'));
     });
   }
 
@@ -503,6 +510,168 @@
         }
       });
     }
+  }
+
+
+  function openHapusModal(id) {
+    const t = teams.find(x => x.id === id) || (previewTeam && previewTeam.id === id ? previewTeam : null);
+    if (!t) {
+      showAdminError('Tim tidak ditemukan.');
+      return;
+    }
+    hapusTarget = t;
+    $('#hapusNamaTarget').textContent = t.namaTim || '—';
+    $('#hapusNamaInput').value = '';
+    $('#hapusPinInput').value = '';
+    const hm = $('#hapusMsg');
+    if (hm) { hm.hidden = true; hm.textContent = ''; }
+    $('#hapusModal').hidden = false;
+    setTimeout(() => { const el = $('#hapusNamaInput'); if (el) el.focus(); }, 50);
+  }
+
+  function closeHapusModal() {
+    $('#hapusModal').hidden = true;
+    hapusTarget = null;
+  }
+
+  async function confirmHapus() {
+    const msg = $('#hapusMsg');
+    if (!hapusTarget) return;
+    const nama = String(($('#hapusNamaInput') && $('#hapusNamaInput').value) || '').trim();
+    const pin = String(($('#hapusPinInput') && $('#hapusPinInput').value) || '');
+    if (!nama) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'Ketik nama tim untuk konfirmasi.';
+      return;
+    }
+    if (!pin) {
+      msg.hidden = false; msg.className = 'alert alert-err';
+      msg.textContent = 'PIN admin wajib.';
+      return;
+    }
+    try {
+      const res = await FutsalAPI.post('hapusTim', {
+        token,
+        pin,
+        id: hapusTarget.id,
+        confirmNamaTim: nama
+      });
+      teams = teams.filter(x => x.id !== hapusTarget.id);
+      if (previewTeam && previewTeam.id === hapusTarget.id) closePreview();
+      closeHapusModal();
+      const am = $('#adminMsg');
+      if (am) {
+        am.hidden = false; am.className = 'alert alert-ok';
+        am.textContent = res.message || ('Tim ' + (res.namaTim || '') + ' diarsipkan.');
+      }
+      render();
+      if (adminTab === 'arsip') await loadArsip();
+    } catch (e) {
+      if (msg) {
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = (e && e.message) || 'Gagal menghapus tim.';
+      } else {
+        showAdminError((e && e.message) || 'Gagal menghapus tim.');
+      }
+    }
+  }
+
+  async function loadArsip() {
+    const box = $('#arsipList');
+    if (!box) return;
+    box.innerHTML = '<div class="empty">Memuat arsip…</div>';
+    try {
+      const res = await FutsalAPI.post('adminListArsip', { token });
+      arsipTeams = res.teams || [];
+      renderArsip();
+    } catch (e) {
+      box.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderArsip() {
+    const box = $('#arsipList');
+    if (!box) return;
+    if (!arsipTeams.length) {
+      box.innerHTML = '<div class="empty">Arsip kosong.</div>';
+      return;
+    }
+    box.innerHTML = arsipTeams.map(t => {
+      const k = kitMeta(t);
+      return (
+        '<article class="admin-card" data-id="' + esc(t.id) + '">' +
+          '<div class="admin-card-main">' +
+            '<div class="admin-card-info">' +
+              '<div class="admin-card-badges">' +
+                '<span class="badge badge-demo">ARSIP</span> ' +
+                '<span class="badge">' + esc(jenisLabel(t.jenisInstansi)) + '</span> ' +
+                kategoriBadge(t) +
+              '</div>' +
+              '<h3>' + esc(t.namaTim) + '</h3>' +
+              '<div class="meta">' + esc(t.namaInstansi) + '</div>' +
+              '<div class="meta" style="font-size:.78rem">' + esc(t.id) +
+                ' · Dihapus: ' + esc(t.waktuHapus || '—') +
+                ' · Kit ' + k.persen + '%' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-card-actions">' +
+            '<button type="button" class="btn btn-primary" data-pulihkan>Pulihkan</button>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+    box.querySelectorAll('[data-pulihkan]').forEach(btn => {
+      btn.onclick = FutsalAPI.withBusy(btn, async () => {
+        const id = btn.closest('[data-id]').getAttribute('data-id');
+        const t = arsipTeams.find(x => x.id === id);
+        if (!t) return;
+        const pin = window.prompt('Masukkan PIN admin untuk memulihkan "' + (t.namaTim || id) + '":');
+        if (pin == null) return;
+        if (!String(pin).trim()) {
+          showAdminError('PIN wajib untuk memulihkan.');
+          return;
+        }
+        const ok = window.confirm('Pulihkan tim "' + (t.namaTim || id) + '" ke daftar aktif dan kembalikan folder Drive?');
+        if (!ok) return;
+        try {
+          const res = await FutsalAPI.post('pulihkanTim', { token, pin: String(pin), id });
+          arsipTeams = arsipTeams.filter(x => x.id !== id);
+          const am = $('#adminMsg');
+          if (am) {
+            am.hidden = false; am.className = 'alert alert-ok';
+            am.textContent = res.message || 'Tim dipulihkan.';
+          }
+          renderArsip();
+          try {
+            const live = await FutsalAPI.post('adminList', { token });
+            teams = live.teams || teams;
+          } catch (_) {}
+        } catch (e) {
+          showAdminError((e && e.message) || 'Gagal memulihkan tim.');
+        }
+      });
+    });
+  }
+
+  function setAdminTab(tab) {
+    adminTab = tab === 'arsip' ? 'arsip' : 'aktif';
+    const aktif = $('#adminList');
+    const arsip = $('#arsipList');
+    const tabA = $('#tabAktif');
+    const tabR = $('#tabArsip');
+    if (aktif) aktif.hidden = adminTab !== 'aktif';
+    if (arsip) arsip.hidden = adminTab !== 'arsip';
+    if (tabA) {
+      tabA.className = adminTab === 'aktif' ? 'btn btn-navy' : 'btn btn-outline';
+      tabA.setAttribute('aria-selected', adminTab === 'aktif' ? 'true' : 'false');
+    }
+    if (tabR) {
+      tabR.className = adminTab === 'arsip' ? 'btn btn-navy' : 'btn btn-outline';
+      tabR.setAttribute('aria-selected', adminTab === 'arsip' ? 'true' : 'false');
+    }
+    if (adminTab === 'arsip') loadArsip();
+    else render();
   }
 
   async function openPreview(id) {
@@ -735,6 +904,22 @@
       if (!previewTeam) return;
       await downloadTeamZip(previewTeam, $('#btnPreviewZip'));
     });
+    const btnPrevHapus = $('#btnPreviewHapus');
+    if (btnPrevHapus) {
+      btnPrevHapus.onclick = () => {
+        if (!previewTeam) return;
+        openHapusModal(previewTeam.id);
+      };
+    }
+    $$('[data-close-hapus]').forEach(el => el.addEventListener('click', closeHapusModal));
+    const btnHapusConfirm = $('#btnHapusConfirm');
+    if (btnHapusConfirm) {
+      btnHapusConfirm.onclick = FutsalAPI.withBusy(btnHapusConfirm, confirmHapus);
+    }
+    const tabAktif = $('#tabAktif');
+    const tabArsip = $('#tabArsip');
+    if (tabAktif) tabAktif.onclick = () => setAdminTab('aktif');
+    if (tabArsip) tabArsip.onclick = () => setAdminTab('arsip');
 
     if (token) {
       showPanel(true);

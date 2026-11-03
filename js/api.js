@@ -237,6 +237,48 @@
           case 'adminExport':
             resolve({ ok: true, demo: true, csv: demoCsv(D.teams), message: 'CSV contoh (demo).' });
             break;
+
+          case 'hapusTim':
+          case 'adminHapusTim': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            const pin = String((payload && payload.pin) || '');
+            if (pin !== '1234' && pin !== 'demo') { resolve({ ok: false, error: 'PIN admin salah.' }); break; }
+            const id = String((payload && payload.id) || '');
+            const row = D.teams.find(x => x.id === id);
+            if (!row) { resolve({ ok: false, error: 'Peserta tidak ditemukan.' }); break; }
+            const conf = String((payload && (payload.confirmNamaTim || payload.namaTimConfirm)) || '').trim().replace(/\s+/g, ' ');
+            const actual = String(row.namaTim || '').trim().replace(/\s+/g, ' ');
+            if (!conf) { resolve({ ok: false, error: 'Ketik nama tim untuk konfirmasi hapus.' }); break; }
+            if (conf !== actual) { resolve({ ok: false, error: 'Nama tim tidak cocok. Ketik nama tim persis seperti tercatat.' }); break; }
+            if (!D._arsip) D._arsip = [];
+            const archived = Object.assign({}, row, { waktuHapus: new Date().toISOString(), arsip: true });
+            D._arsip.unshift(archived);
+            D.teams = D.teams.filter(x => x.id !== id);
+            resolve({ ok: true, demo: true, id, namaTim: actual, folderTrashed: true,
+              message: 'MODE DEMO: tim dipindah ke Arsip. Folder Drive di-trash (simulasi).' });
+            break;
+          }
+          case 'adminListArsip': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            resolve({ ok: true, demo: true, teams: (D._arsip || []).slice() });
+            break;
+          }
+          case 'pulihkanTim':
+          case 'adminPulihkanTim': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            const pin2 = String((payload && payload.pin) || '');
+            if (pin2 !== '1234' && pin2 !== 'demo') { resolve({ ok: false, error: 'PIN admin salah.' }); break; }
+            const id2 = String((payload && payload.id) || '');
+            if (!D._arsip) D._arsip = [];
+            const ix = D._arsip.findIndex(x => x.id === id2);
+            if (ix < 0) { resolve({ ok: false, error: 'Data arsip tidak ditemukan.' }); break; }
+            const restored = D._arsip.splice(ix, 1)[0];
+            delete restored.arsip; delete restored.waktuHapus;
+            D.teams.push(restored);
+            resolve({ ok: true, demo: true, id: id2, namaTim: restored.namaTim, folderRestored: true,
+              message: 'MODE DEMO: tim dipulihkan ke daftar aktif.' });
+            break;
+          }
           case 'adminResetEditCode': {
             if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
             if (!(payload.confirm === true || payload.confirm === 'true')) {
