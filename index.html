@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1.0.8">
+<link rel="stylesheet" href="css/app.css?v=1.0.9">
 <link rel="icon" href="icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -145,6 +145,14 @@
                 <option value="DP3AP2KB">DP3AP2KB</option>
               </select>
             </label>
+            <label class="field">Kategori tim
+              <select id="qKategori">
+                <option value="">Semua</option>
+                <option value="Putra">Putra</option>
+                <option value="Putri">Putri</option>
+                <option value="__empty">Belum diisi</option>
+              </select>
+            </label>
           </div>
         </div>
         <div class="grid-3 stagger" id="galeriTeams"></div>
@@ -177,8 +185,11 @@
         <form class="form-card reveal in" id="formCekKode" novalidate>
           <div class="form-grid">
             <label class="field full">ID Tim atau Nama Tim *
-              <input type="text" name="identifikasi" id="cekIdentifikasi" required maxlength="120" placeholder="Contoh: KC5-20261103-ABCD1234 atau FC Nakes …" autocomplete="organization">
-              <span class="hint">Sesuaikan dengan data kit yang sudah diunggah</span>
+              <div class="combo" id="cekCombo">
+                <input type="text" name="identifikasi" id="cekIdentifikasi" required maxlength="120" placeholder="Ketik nama tim / ID untuk mencari…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cekSuggest" aria-haspopup="listbox">
+                <ul class="combo-list" id="cekSuggest" role="listbox" hidden></ul>
+              </div>
+              <span class="hint">Ketik sebagian nama atau ID — pilih dari daftar yang muncul</span>
             </label>
             <label class="field full">Kode edit *
               <input type="text" name="editCode" id="cekEditCode" required maxlength="24" placeholder="Contoh: KC5-AB12CD34" autocomplete="off" spellcheck="false">
@@ -236,8 +247,16 @@
             <label class="field">Nama instansi *
               <input type="text" name="namaInstansi" required maxlength="120" placeholder="UPTD Puskesmas / RSUD …">
             </label>
-            <label class="field full">Nama tim *
+            <label class="field">Nama tim *
               <input type="text" name="namaTim" required maxlength="80" placeholder="Contoh: FC Nakes …">
+            </label>
+            <label class="field">Kategori tim *
+              <select name="kategoriTim" id="kategoriTim" required>
+                <option value="">— pilih —</option>
+                <option value="Putra">Putra</option>
+                <option value="Putri">Putri (Wanita)</option>
+              </select>
+              <span class="hint">Wajib. Tim putri pilih Putri.</span>
             </label>
             <label class="field">Nama kapten *
               <input type="text" name="namaKapten" required maxlength="80">
@@ -253,7 +272,8 @@
               <input type="text" name="warnaJersey" maxlength="60" placeholder="Navy & Lime">
             </label>
             <label class="field full">Catatan (opsional)
-              <input type="text" name="catatan" maxlength="200" placeholder="Kategori putra/putri, dll.">
+              <input type="text" name="catatan" maxlength="200" placeholder="Catatan tambahan — mis. keterangan tim putri, dll.">
+              <span class="hint">Bukan pengganti Kategori Tim. Untuk catatan bebas (termasuk info tim putri).</span>
             </label>
 
             <div class="full kepala-section">
@@ -326,14 +346,14 @@
     Dinas Kesehatan Kabupaten Sintang
     <div class="credits">
       Penyusun: <strong>Anara Tech</strong><br>
-      Versi <span id="versiLabel">1.0.8</span>
+      Versi <span id="versiLabel">1.0.9</span>
     </div>
   </div>
 </footer>
 
-<script src="js/config.js?v=1.0.8"></script>
-<script src="js/demo-data.js?v=1.0.8"></script>
-<script src="js/api.js?v=1.0.8"></script>
-<script src="js/app.js?v=1.0.8"></script>
+<script src="js/config.js?v=1.0.9"></script>
+<script src="js/demo-data.js?v=1.0.9"></script>
+<script src="js/api.js?v=1.0.9"></script>
+<script src="js/app.js?v=1.0.9"></script>
 </body>
 </html>

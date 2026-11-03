@@ -134,14 +134,20 @@
               break;
             }
             // sertakan kontak untuk pemilik (demo teams sudah punya)
+            // backfill demo admin copy
+            if (!t.hasEditCode) { t.editCode = code; t.hasEditCode = true; t.editCodeLegacy = false; }
+            const owner = Object.assign({}, t, {
+              catatan: t.catatan || 'Catatan contoh pemilik',
+              updatedAt: t.updatedAt || t.createdAt
+            });
+            delete owner.editCode;
+            delete owner.hasEditCode;
+            delete owner.editCodeLegacy;
+            delete owner.kodeAdmin;
             resolve({
               ok: true,
               demo: true,
-              editCode: code,
-              team: Object.assign({}, t, {
-                catatan: t.catatan || 'Catatan contoh pemilik',
-                updatedAt: t.updatedAt || t.createdAt
-              }),
+              team: owner,
               message: 'Kode edit valid. Data kit siap ditinjau. (MODE DEMO)'
             });
             break;
@@ -177,12 +183,34 @@
             resolve({ ok: true, demo: true, id: payload.id, key: payload.key, filename: 'demo_'+(payload.key||'file')+'.png', mime: 'image/png', base64: b64, size: 68 });
             break;
           }
-          case 'adminSetStatus':
-            resolve({ ok: true, demo: true, message: 'MODE DEMO: status tidak diubah permanen.' });
+          case 'adminSetStatus': {
+            const idS = String((payload && payload.id) || '');
+            const rowS = D.teams.find(x => x.id === idS);
+            if (rowS && payload && payload.status) rowS.status = payload.status;
+            if (rowS && payload && payload.kategoriTim) rowS.kategoriTim = String(payload.kategoriTim);
+            if (rowS && payload && payload.catatanAdmin != null) rowS.catatanAdmin = String(payload.catatanAdmin || '');
+            resolve({ ok: true, demo: true, message: 'MODE DEMO: status/kategori diperbarui (sementara).' });
             break;
+          }
           case 'adminExport':
             resolve({ ok: true, demo: true, csv: demoCsv(D.teams), message: 'CSV contoh (demo).' });
             break;
+          case 'adminResetEditCode': {
+            if (!payload || !payload.token) { resolve({ ok: false, error: 'Token admin diperlukan.' }); break; }
+            if (!(payload.confirm === true || payload.confirm === 'true')) {
+              resolve({ ok: false, error: 'Konfirmasi wajib.' }); break;
+            }
+            const id = String((payload && payload.id) || '');
+            const row = D.teams.find(x => x.id === id);
+            if (!row) { resolve({ ok: false, error: 'Peserta tidak ditemukan.' }); break; }
+            const code = 'KC5-' + Math.random().toString(36).slice(2, 10).toUpperCase();
+            row.editCode = code; row.hasEditCode = true; row.editCodeLegacy = false;
+            resolve({
+              ok: true, demo: true, id, editCode: code, hasEditCode: true,
+              message: 'MODE DEMO: kode edit baru dibuat. Salin dan sampaikan ke faskes.'
+            });
+            break;
+          }
           default:
             resolve({ ok: false, error: 'Aksi tidak dikenal: ' + action });
         }
@@ -191,13 +219,13 @@
   }
 
   function demoCsv(teams) {
-    const h = ['id','status','jenisInstansi','namaInstansi','namaTim','namaKapten','namaKepala','kepalaSemua','timGabungan','anggotaFaskes','warnaJersey','kontakNama','kontakWA'];
+    const h = ['id','status','jenisInstansi','namaInstansi','namaTim','kategoriTim','namaKapten','namaKepala','kepalaSemua','timGabungan','anggotaFaskes','warnaJersey','kontakNama','kontakWA'];
     const rows = [h.join(',')];
     teams.forEach(t => {
       const kepala = Array.isArray(t.kepala) ? t.kepala : [];
       const map = {
         id: t.id, status: t.status, jenisInstansi: t.jenisInstansi, namaInstansi: t.namaInstansi,
-        namaTim: t.namaTim, namaKapten: t.namaKapten, namaKepala: t.namaKepala || (kepala[0] && kepala[0].nama) || '',
+        namaTim: t.namaTim, kategoriTim: t.kategoriTim || '', namaKapten: t.namaKapten, namaKepala: t.namaKepala || (kepala[0] && kepala[0].nama) || '',
         kepalaSemua: kepala.map(k => k.nama + (k.instansi ? ' (' + k.instansi + ')' : '')).join(' | '),
         timGabungan: t.timGabungan ? 'ya' : 'tidak',
         anggotaFaskes: t.anggotaFaskes || '',

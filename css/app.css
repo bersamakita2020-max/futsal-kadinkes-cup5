@@ -738,3 +738,106 @@ body.modal-open { overflow: hidden; }
   .owner-summary { padding: 14px; }
   .owner-summary .owner-meta h3 { font-size: 1.3rem; }
 }
+
+
+/* Admin kode edit */
+.kode-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(3,59,126,.05);
+  border: 1px solid rgba(3,59,126,.12);
+  min-width: 0;
+}
+.kode-box.kode-missing { background: rgba(212,160,23,.08); border-color: rgba(212,160,23,.28); }
+.kode-label {
+  font-size: .72rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+}
+.kode-row {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.kode-val {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9rem; font-weight: 700; color: var(--navy);
+  background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; word-break: break-all; min-width: 0;
+}
+.kode-missing-txt { color: #7a5c08; font-weight: 600; font-size: .88rem; flex: 1; min-width: 120px; }
+.kode-btn { padding: 7px 12px !important; font-size: .82rem !important; }
+@media (max-width: 390px) {
+  .kode-row { gap: 6px; }
+  .kode-btn { flex: 1 1 auto; justify-content: center; }
+}
+
+
+/* Kategori badges */
+.badge-putra {
+  background: rgba(3,59,126,.12); color: var(--navy); border: 1px solid rgba(3,59,126,.2);
+}
+.badge-putri {
+  background: linear-gradient(135deg, rgba(214,69,140,.16), rgba(168,85,247,.14));
+  color: #9d174d; border: 1px solid rgba(190,24,93,.28);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.4) inset;
+}
+.badge-kategori-empty {
+  background: rgba(100,116,139,.1); color: #475569; border: 1px dashed rgba(100,116,139,.35);
+  font-weight: 600;
+}
+.pill.putri, .pill-putri {
+  background: rgba(236,72,153,.18); color: #fff; border-color: rgba(255,255,255,.25);
+}
+
+/* Combobox / autocomplete */
+.combo { position: relative; width: 100%; min-width: 0; }
+.combo input {
+  width: 100%; box-sizing: border-box;
+}
+.combo-list {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  z-index: 40; margin: 0; padding: 6px; list-style: none;
+  max-height: min(280px, 50vh); overflow-y: auto; overflow-x: hidden;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(3,59,126,.18);
+  animation: comboIn .16s ease both;
+}
+@keyframes comboIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.combo-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  border: 0; width: 100%; background: transparent; text-align: left;
+  font: inherit; color: inherit; min-width: 0;
+  transition: background .12s ease;
+}
+.combo-item:hover, .combo-item.is-active, .combo-item[aria-selected="true"] {
+  background: rgba(3,59,126,.07);
+}
+.combo-logo {
+  width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto;
+  background: #f3f6fb; border: 1px solid var(--line); overflow: hidden;
+  display: grid; place-items: center;
+}
+.combo-logo img { width: 100%; height: 100%; object-fit: contain; }
+.combo-meta { min-width: 0; flex: 1; }
+.combo-meta strong {
+  display: block; color: var(--navy); font-size: .92rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.combo-meta .combo-sub {
+  font-size: .75rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.combo-meta .combo-id {
+  font-size: .68rem; color: var(--teal); font-weight: 600;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.combo-empty {
+  padding: 12px; text-align: center; color: var(--muted); font-size: .85rem;
+}
+@media (max-width: 390px) {
+  .combo-list { max-height: min(240px, 45vh); }
+  .combo-logo { width: 36px; height: 36px; }
+}

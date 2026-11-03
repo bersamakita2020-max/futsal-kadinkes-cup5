@@ -21,6 +21,28 @@
     return 'badge-pk';
   }
 
+  function normalizeKategori(v) {
+    const s = String(v || '').trim();
+    if (!s) return '';
+    const low = s.toLowerCase();
+    if (low === 'putra' || low === 'pria') return 'Putra';
+    if (low === 'putri' || low === 'wanita' || low === 'putri (wanita)' || low === 'perempuan') return 'Putri';
+    if (s === 'Putra' || s === 'Putri') return s;
+    return '';
+  }
+  function kategoriBadge(t) {
+    const k = normalizeKategori(t && t.kategoriTim);
+    if (k === 'Putri') return '<span class="badge badge-putri">Putri</span>';
+    if (k === 'Putra') return '<span class="badge badge-putra">Putra</span>';
+    return '<span class="badge badge-kategori-empty">Kategori belum diisi</span>';
+  }
+  function kategoriPill(t) {
+    const k = normalizeKategori(t && t.kategoriTim);
+    if (k === 'Putri') return '<span class="pill" style="background:rgba(236,72,153,.22)">Putri</span>';
+    if (k === 'Putra') return '<span class="pill ghost">Putra</span>';
+    return '<span class="pill ghost">Kategori belum diisi</span>';
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -137,7 +159,7 @@
         '</div>' +
         '<div class="body">' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
-            '<span class="badge ' + badgeJenis + '">' + esc(jenis) + '</span>' + statusBadge + gabungan + demo +
+            '<span class="badge ' + badgeJenis + '">' + esc(jenis) + '</span>' + kategoriBadge(t) + ' ' + statusBadge + gabungan + demo +
           '</div>' +
           '<h3>' + esc(t.namaTim) + '</h3>' +
           '<div class="meta">' + esc(t.namaInstansi) + '</div>' +
@@ -198,8 +220,11 @@
   function renderGaleri() {
     const q = ($('#qSearch').value || '').toLowerCase().trim();
     const jenis = $('#qJenis').value;
+    const kat = ($('#qKategori') && $('#qKategori').value) || '';
     let list = cacheTeams.slice();
     if (jenis) list = list.filter(t => t.jenisInstansi === jenis);
+    if (kat === '__empty') list = list.filter(t => !normalizeKategori(t.kategoriTim));
+    else if (kat) list = list.filter(t => normalizeKategori(t.kategoriTim) === kat);
     if (q) {
       list = list.filter(t =>
         (t.namaTim || '').toLowerCase().includes(q) ||
@@ -248,6 +273,7 @@
           '<div>' + demo +
             '<div class="pill-row" style="margin-bottom:8px">' +
               '<span class="pill">' + esc(jenisLabel(t.jenisInstansi)) + '</span>' +
+              kategoriPill(t) +
               (t.timGabungan ? '<span class="pill ghost">Tim gabungan</span>' : '') +
               (t.status === 'verified' ? '<span class="pill ghost">Kit terverifikasi</span>' : '<span class="pill ghost">Menunggu verifikasi</span>') +
             '</div>' +
@@ -441,6 +467,7 @@
         '<div class="owner-meta">' +
           '<div class="pill-row" style="margin-bottom:4px;gap:6px;flex-wrap:wrap">' +
             '<span class="badge ' + jenisBadgeClass(team.jenisInstansi) + '">' + esc(jenisLabel(team.jenisInstansi)) + '</span>' +
+            kategoriBadge(team) +
             statusBadgeHtml(team.status) +
             (team.timGabungan ? '<span class="badge badge-gabungan">Tim gabungan</span>' : '') +
             (team._contoh ? '<span class="badge badge-demo">CONTOH</span>' : '') +
@@ -452,6 +479,7 @@
       '</div>' +
       '<div class="form-card" style="margin:0 0 12px;padding:12px;box-shadow:none">' + kitBar(team) + '</div>' +
       '<div class="owner-grid">' +
+        '<div class="owner-kv"><span>Kategori tim</span><strong>' + esc(normalizeKategori(team.kategoriTim) || 'Kategori belum diisi') + '</strong></div>' +
         '<div class="owner-kv"><span>Kapten</span><strong>' + esc(team.namaKapten || '—') + '</strong></div>' +
         '<div class="owner-kv"><span>Warna jersey</span><strong>' + esc(team.warnaJersey || '—') + '</strong></div>' +
         '<div class="owner-kv"><span>Kontak</span><strong>' + esc(team.kontakNama || '—') + '</strong></div>' +
@@ -501,6 +529,7 @@
     set('jenisInstansi', team.jenisInstansi || '');
     set('namaInstansi', team.namaInstansi || '');
     set('namaTim', team.namaTim || '');
+    set('kategoriTim', normalizeKategori(team.kategoriTim) || '');
     set('namaKapten', team.namaKapten || '');
     set('kontakNama', team.kontakNama || '');
     set('kontakWA', team.kontakWA || '');
@@ -548,6 +577,117 @@
     if (msg) { msg.hidden = true; msg.textContent = ''; }
     const form = $('#formCekKode');
     if (form) form.reset();
+  }
+
+
+  function fuzzyScore(query, text) {
+    const q = String(query || '').toLowerCase().trim();
+    const s = String(text || '').toLowerCase();
+    if (!q) return 1;
+    if (s === q) return 100;
+    if (s.startsWith(q)) return 80;
+    if (s.includes(q)) return 60;
+    // subsequence fuzzy
+    let qi = 0, score = 0;
+    for (let i = 0; i < s.length && qi < q.length; i++) {
+      if (s[i] === q[qi]) { score += 2; qi++; }
+    }
+    return qi === q.length ? 20 + score : 0;
+  }
+
+  function setupCekCombo() {
+    const input = $('#cekIdentifikasi');
+    const list = $('#cekSuggest');
+    const wrap = $('#cekCombo');
+    if (!input || !list || !wrap) return;
+    let active = -1;
+    let items = [];
+
+    function hide() {
+      list.hidden = true;
+      list.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+      active = -1;
+    }
+    function show(rows) {
+      items = rows;
+      active = rows.length ? 0 : -1;
+      if (!rows.length) {
+        list.innerHTML = '<li class="combo-empty" role="presentation">Tidak ada tim cocok</li>';
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        return;
+      }
+      list.innerHTML = rows.map((t, i) =>
+        '<li role="option" id="cekOpt' + i + '" class="combo-item' + (i === 0 ? ' is-active' : '') + '" data-idx="' + i + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '">' +
+          '<span class="combo-logo"><img src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt=""></span>' +
+          '<span class="combo-meta">' +
+            '<strong>' + esc(t.namaTim || '—') + '</strong>' +
+            '<span class="combo-sub">' + esc(t.namaInstansi || '') + ' · ' + esc(jenisLabel(t.jenisInstansi)) +
+              (normalizeKategori(t.kategoriTim) ? ' · ' + esc(normalizeKategori(t.kategoriTim)) : '') +
+            '</span>' +
+            '<span class="combo-id">' + esc(t.id || '') + '</span>' +
+          '</span>' +
+          kategoriBadge(t) +
+        '</li>'
+      ).join('');
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      list.querySelectorAll('.combo-item').forEach(el => {
+        el.addEventListener('mousedown', (e) => { e.preventDefault(); pick(+el.getAttribute('data-idx')); });
+      });
+    }
+    function pick(idx) {
+      const t = items[idx];
+      if (!t) return;
+      input.value = t.id || t.namaTim || '';
+      hide();
+      input.focus();
+    }
+    function filter() {
+      const q = input.value.trim();
+      if (!q) { hide(); return; }
+      const scored = (cacheTeams || []).map(t => {
+        const score = Math.max(
+          fuzzyScore(q, t.namaTim),
+          fuzzyScore(q, t.id),
+          fuzzyScore(q, t.namaInstansi),
+          fuzzyScore(q, t.namaKapten)
+        );
+        return { t, score };
+      }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8).map(x => x.t);
+      show(scored);
+    }
+    function move(delta) {
+      if (list.hidden || !items.length) return;
+      active = (active + delta + items.length) % items.length;
+      list.querySelectorAll('.combo-item').forEach((el, i) => {
+        el.classList.toggle('is-active', i === active);
+        el.setAttribute('aria-selected', i === active ? 'true' : 'false');
+      });
+      const el = list.querySelector('.combo-item.is-active');
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+
+    input.addEventListener('input', () => {
+      if (!cacheTeams.length) loadTeams().then(filter).catch(() => filter());
+      else filter();
+    });
+    input.addEventListener('focus', () => {
+      if (input.value.trim()) {
+        if (!cacheTeams.length) loadTeams().then(filter).catch(() => filter());
+        else filter();
+      }
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+      else if (e.key === 'Enter' && !list.hidden && active >= 0) { e.preventDefault(); pick(active); }
+      else if (e.key === 'Escape') hide();
+    });
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) hide();
+    });
   }
 
   function setupCekKode() {
@@ -662,6 +802,12 @@
           return;
         }
       }
+      const kategoriTim = normalizeKategori(fd.get('kategoriTim'));
+      if (!kategoriTim) {
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = 'Pilih Kategori Tim: Putra atau Putri.';
+        return;
+      }
       const wa = String(fd.get('kontakWA') || '').replace(/\D/g, '');
       if (wa.length < 10) {
         msg.hidden = false; msg.className = 'alert alert-err';
@@ -673,6 +819,7 @@
         jenisInstansi: fd.get('jenisInstansi'),
         namaInstansi: String(fd.get('namaInstansi') || '').trim(),
         namaTim: String(fd.get('namaTim') || '').trim(),
+        kategoriTim,
         namaKapten: String(fd.get('namaKapten') || '').trim(),
         namaKepala: kepala[0].nama,
         kontakNama: String(fd.get('kontakNama') || '').trim(),
@@ -829,7 +976,9 @@
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);
     $('#qJenis') && $('#qJenis').addEventListener('change', renderGaleri);
+    $('#qKategori') && $('#qKategori').addEventListener('change', renderGaleri);
     setupForm();
+    setupCekCombo();
     setupCekKode();
     window.addEventListener('hashchange', route);
     route();

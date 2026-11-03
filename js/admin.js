@@ -26,6 +26,21 @@
     if (j === 'DP3AP2KB') return 'DP3AP2KB';
     return j || 'Puskesmas';
   }
+  function normalizeKategori(v) {
+    const s = String(v || '').trim();
+    if (!s) return '';
+    const low = s.toLowerCase();
+    if (low === 'putra' || low === 'pria') return 'Putra';
+    if (low === 'putri' || low === 'wanita' || low === 'putri (wanita)' || low === 'perempuan') return 'Putri';
+    if (s === 'Putra' || s === 'Putri') return s;
+    return '';
+  }
+  function kategoriBadge(t) {
+    const k = normalizeKategori(t && t.kategoriTim);
+    if (k === 'Putri') return '<span class="badge badge-putri">Putri</span>';
+    if (k === 'Putra') return '<span class="badge badge-putra">Putra</span>';
+    return '<span class="badge badge-kategori-empty">Kategori belum diisi</span>';
+  }
   function statusLabel(s) {
     if (s === 'verified') return '<span class="badge badge-ok">Kit terverifikasi</span>';
     if (s === 'rejected') return '<span class="badge badge-demo">Ditolak</span>';
@@ -48,12 +63,15 @@
     const st = $('#fStatus').value;
     const jenis = $('#fJenis').value;
     const kit = $('#fKit').value;
+    const kat = ($('#fKategori') && $('#fKategori').value) || '';
     const q = ($('#fSearch').value || '').toLowerCase().trim();
     let list = teams.slice();
     if (st) list = list.filter(t => t.status === st);
     if (jenis) list = list.filter(t => t.jenisInstansi === jenis);
     if (kit === 'lengkap') list = list.filter(t => kitMeta(t).lengkap);
     if (kit === 'belum') list = list.filter(t => !kitMeta(t).lengkap);
+    if (kat === '__empty') list = list.filter(t => !normalizeKategori(t.kategoriTim));
+    else if (kat) list = list.filter(t => normalizeKategori(t.kategoriTim) === kat);
     if (q) {
       list = list.filter(t =>
         (t.namaTim || '').toLowerCase().includes(q) ||
@@ -104,7 +122,154 @@
     el.textContent = msg;
   }
 
+
+  function maskCode(code) {
+    const s = String(code || '');
+    if (s.length <= 4) return '••••';
+    return s.slice(0, 4) + '••••' + s.slice(-2);
+  }
+
+  function kodeEditHtml(t, opts) {
+    opts = opts || {};
+    const compact = !!opts.compact;
+    const id = esc(t.id);
+    if (t.hasEditCode && t.editCode) {
+      return (
+        '<div class="kode-box" data-kode-id="' + id + '">' +
+          '<div class="kode-label">Kode edit</div>' +
+          '<div class="kode-row">' +
+            '<code class="kode-val" data-kode-display data-masked="1" data-full="' + esc(t.editCode) + '">' + esc(maskCode(t.editCode)) + '</code>' +
+            '<button type="button" class="btn btn-outline kode-btn" data-kode-toggle>Lihat</button>' +
+            '<button type="button" class="btn btn-navy kode-btn" data-kode-copy>Salin</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+    return (
+      '<div class="kode-box kode-missing" data-kode-id="' + id + '">' +
+        '<div class="kode-label">Kode edit</div>' +
+        '<div class="kode-row">' +
+          '<span class="kode-missing-txt">Kode belum tersimpan' +
+            (t.editCodeLegacy ? ' (data lama)' : '') +
+          '</span>' +
+          '<button type="button" class="btn btn-primary kode-btn" data-kode-reset>Buat Kode Baru</button>' +
+        '</div>' +
+        (compact ? '' : '<div class="hint" style="margin-top:6px">Hanya admin yang bisa membuat kode baru. Kode lama (jika ada) akan diganti.</div>') +
+      '</div>'
+    );
+  }
+
+  async function copyText(text) {
+    const s = String(text || '');
+    if (!s) return false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(s);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = s; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) { return false; }
+  }
+
+  function bindKodeControls(root) {
+    (root || document).querySelectorAll('[data-kode-toggle]').forEach(btn => {
+      if (btn.dataset.boundKode === '1') return;
+      btn.dataset.boundKode = '1';
+      btn.onclick = () => {
+        const box = btn.closest('[data-kode-id]');
+        const el = box && box.querySelector('[data-kode-display]');
+        if (!el) return;
+        const masked = el.getAttribute('data-masked') === '1';
+        if (masked) {
+          el.textContent = el.getAttribute('data-full') || '';
+          el.setAttribute('data-masked', '0');
+          btn.textContent = 'Sembunyikan';
+        } else {
+          el.textContent = maskCode(el.getAttribute('data-full') || '');
+          el.setAttribute('data-masked', '1');
+          btn.textContent = 'Lihat';
+        }
+      };
+    });
+    (root || document).querySelectorAll('[data-kode-copy]').forEach(btn => {
+      if (btn.dataset.boundKode === '1') return;
+      btn.dataset.boundKode = '1';
+      btn.onclick = FutsalAPI.withBusy(btn, async () => {
+        const box = btn.closest('[data-kode-id]');
+        const el = box && box.querySelector('[data-kode-display]');
+        const full = el && el.getAttribute('data-full');
+        const ok = await copyText(full);
+        const msg = $('#adminMsg');
+        if (msg) {
+          msg.hidden = false;
+          msg.className = ok ? 'alert alert-ok' : 'alert alert-err';
+          msg.textContent = ok ? 'Kode edit disalin.' : 'Gagal menyalin. Salin manual.';
+        }
+      });
+    });
+    (root || document).querySelectorAll('[data-kode-reset]').forEach(btn => {
+      if (btn.dataset.boundKode === '1') return;
+      btn.dataset.boundKode = '1';
+      btn.onclick = FutsalAPI.withBusy(btn, async () => {
+        const box = btn.closest('[data-kode-id]');
+        const id = box && box.getAttribute('data-kode-id');
+        if (!id) return;
+        const t = teams.find(x => x.id === id) || (previewTeam && previewTeam.id === id ? previewTeam : null);
+        const nama = (t && t.namaTim) || id;
+        const ok = window.confirm(
+          'Buat kode edit BARU untuk "' + nama + '"?\\n\\n' +
+          'Kode lama (jika masih diingat faskes) tidak berlaku lagi. Lanjutkan?'
+        );
+        if (!ok) return;
+        const msg = $('#adminMsg');
+        try {
+          const res = await FutsalAPI.post('adminResetEditCode', { token, id, confirm: true });
+          const code = res.editCode;
+          const row = teams.find(x => x.id === id);
+          if (row) {
+            row.editCode = code;
+            row.hasEditCode = true;
+            row.editCodeLegacy = false;
+          }
+          if (previewTeam && previewTeam.id === id) {
+            previewTeam.editCode = code;
+            previewTeam.hasEditCode = true;
+            previewTeam.editCodeLegacy = false;
+          }
+          if (msg) {
+            msg.hidden = false;
+            msg.className = 'alert alert-ok';
+            msg.textContent = (res.message || 'Kode baru dibuat.') + (code ? (' Kode: ' + code) : '');
+          }
+          if (code) await copyText(code);
+          render();
+          if (previewTeam && previewTeam.id === id && !$('#previewModal').hidden) {
+            renderPreviewBody(previewTeam);
+            bindKodeControls($('#previewBody'));
+          }
+          if (code) window.alert('Kode edit baru:\\n\\n' + code + '\\n\\nSudah dicoba disalin ke clipboard. Sampaikan ke faskes.');
+        } catch (e) {
+          if (msg) {
+            msg.hidden = false;
+            msg.className = 'alert alert-err';
+            msg.textContent = e.message || 'Gagal membuat kode baru.';
+          }
+          throw e;
+        }
+      });
+    });
+  }
+
   function render() {
+
     const list = filtered();
     const box = listRoot();
     if (!box) {
@@ -125,6 +290,7 @@
             '<div class="admin-card-info">' +
               '<div class="admin-card-badges">' +
                 '<span class="badge">' + esc(jenisLabel(t.jenisInstansi)) + '</span> ' +
+                kategoriBadge(t) + ' ' +
                 statusLabel(t.status) + gab +
                 (t._contoh ? ' <span class="badge badge-demo">CONTOH</span>' : '') +
               '</div>' +
@@ -134,6 +300,7 @@
                 ' · Kit ' + k.persen + '%' + (k.lengkap ? ' lengkap' : '') +
               '</div>' +
               kitDots(t) +
+              kodeEditHtml(t, { compact: true }) +
             '</div>' +
           '</div>' +
           '<div class="admin-card-actions">' +
@@ -163,6 +330,7 @@
         if (t) await downloadTeamZip(t, btn);
       });
     });
+    bindKodeControls(box);
   }
 
   async function setStatus(id, status, note) {
@@ -257,6 +425,13 @@
             '<div><dt>Jenis</dt><dd>' + esc(jenisLabel(t.jenisInstansi)) + '</dd></div>' +
             '<div><dt>Instansi</dt><dd>' + esc(t.namaInstansi) + '</dd></div>' +
             '<div><dt>Nama tim</dt><dd>' + esc(t.namaTim) + '</dd></div>' +
+            '<div><dt>Kategori</dt><dd>' + kategoriBadge(t) +
+              ' <label class="kode-inline" style="display:inline-flex;gap:6px;align-items:center;margin-left:8px;font-size:.8rem">Ubah ' +
+              '<select data-admin-kategori style="font:inherit;border-radius:8px;padding:4px 8px;border:1px solid var(--line)">' +
+                '<option value="">—</option>' +
+                '<option value="Putra"' + (normalizeKategori(t.kategoriTim)==='Putra'?' selected':'') + '>Putra</option>' +
+                '<option value="Putri"' + (normalizeKategori(t.kategoriTim)==='Putri'?' selected':'') + '>Putri</option>' +
+              '</select></label></dd></div>' +
             (t.timGabungan ? '<div><dt>Tim gabungan</dt><dd>' + esc(t.anggotaFaskes || 'ya') + '</dd></div>' : '') +
             '<div><dt>Kapten</dt><dd>' + esc(t.namaKapten) + '</dd></div>' +
             '<div><dt>Warna jersey</dt><dd>' + esc(t.warnaJersey || '—') + '</dd></div>' +
@@ -266,6 +441,7 @@
             '<div><dt>Diperbarui</dt><dd>' + esc(t.updatedAt || '—') + '</dd></div>' +
           '</dl>' +
           kitDots(t) +
+          '<div style="margin-top:12px">' + kodeEditHtml(t) + '</div>' +
         '</section>' +
         '<section class="form-card">' +
           '<h3 style="margin-top:0;color:var(--navy)">Kontak</h3>' +
@@ -294,6 +470,29 @@
         await downloadOne(t.id, btn.getAttribute('data-dl'), btn);
       });
     });
+    bindKodeControls($('#previewBody'));
+    const katSel = $('#previewBody [data-admin-kategori]');
+    if (katSel) {
+      katSel.onchange = FutsalAPI.withBusy(katSel, async () => {
+        const val = katSel.value;
+        if (!val) return;
+        const msg = $('#adminMsg');
+        try {
+          await FutsalAPI.post('adminSetStatus', {
+            token, id: t.id, status: t.status || 'pending', kategoriTim: val
+          });
+          t.kategoriTim = val;
+          const row = teams.find(x => x.id === t.id);
+          if (row) row.kategoriTim = val;
+          if (msg) { msg.hidden = false; msg.className = 'alert alert-ok'; msg.textContent = 'Kategori → ' + val; }
+          render();
+          renderPreviewBody(t);
+        } catch (e) {
+          if (msg) { msg.hidden = false; msg.className = 'alert alert-err'; msg.textContent = e.message; }
+          throw e;
+        }
+      });
+    }
   }
 
   async function openPreview(id) {
@@ -589,7 +788,7 @@
       $('#btnZipAll').textContent = 'Unduh semua (ZIP)';
     });
 
-    ['fStatus', 'fJenis', 'fKit'].forEach(id => $( '#' + id ).onchange = render);
+    ['fStatus', 'fJenis', 'fKit', 'fKategori'].forEach(id => { const el = $('#' + id); if (el) el.onchange = render; });
     $('#fSearch').oninput = render;
     $('#pinInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') $('#btnLogin').click();
