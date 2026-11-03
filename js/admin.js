@@ -42,11 +42,20 @@
       tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Tidak ada data.</td></tr>';
       return;
     }
-    tb.innerHTML = list.map(t =>
+    tb.innerHTML = list.map(t => {
+      const kepala = Array.isArray(t.kepala) ? t.kepala : [];
+      const kepalaTxt = kepala.length
+        ? kepala.map(k => esc(k.nama) + (k.instansi ? ' <span style="color:var(--muted)">(' + esc(k.instansi) + ')</span>' : '')).join('<br>')
+        : esc(t.namaKepala || '—');
+      const gab = t.timGabungan ? ' <span class="badge badge-gabungan">Gabungan</span>' : '';
+      return (
       '<tr data-id="' + esc(t.id) + '">' +
-        '<td><strong>' + esc(t.namaTim) + '</strong>' + (t._contoh ? ' <span class="badge badge-demo">CONTOH</span>' : '') +
-          '<div style="font-size:.78rem;color:var(--muted)">' + esc(t.id) + '</div></td>' +
-        '<td>' + esc(jenisLabel(t.jenisInstansi)) + '<br><span style="color:var(--muted);font-size:.84rem">' + esc(t.namaInstansi) + '</span></td>' +
+        '<td><strong>' + esc(t.namaTim) + '</strong>' + gab + (t._contoh ? ' <span class="badge badge-demo">CONTOH</span>' : '') +
+          '<div style="font-size:.78rem;color:var(--muted)">' + esc(t.id) + '</div>' +
+          (t.timGabungan && t.anggotaFaskes ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Anggota: ' + esc(t.anggotaFaskes) + '</div>' : '') +
+          '</td>' +
+        '<td>' + esc(jenisLabel(t.jenisInstansi)) + '<br><span style="color:var(--muted);font-size:.84rem">' + esc(t.namaInstansi) + '</span>' +
+          '<div style="font-size:.78rem;margin-top:4px"><strong>Pimpinan:</strong><br>' + kepalaTxt + '</div></td>' +
         '<td>' + statusLabel(t.status) + '</td>' +
         '<td style="font-size:.84rem">' + esc(t.kontakNama) + '<br>' + esc(t.kontakWA) + '</td>' +
         '<td style="white-space:nowrap">' +
@@ -55,7 +64,7 @@
           '<button type="button" class="btn btn-danger" style="padding:6px 10px;font-size:.78rem;margin:2px" data-act="rejected">Tolak</button>' +
         '</td>' +
       '</tr>'
-    ).join('');
+    ); }).join('');
 
     tb.querySelectorAll('button[data-act]').forEach(btn => {
       btn.onclick = FutsalAPI.withBusy(btn, async () => {

@@ -3,7 +3,7 @@
  */
 (function (global) {
   const C = () => global.FUTSAL_CONFIG || {};
-  const demo = () => !!(C().DEMO_MODE || !C().API_URL);
+  const demo = () => !!(C().DEMO_MODE || !C().API_URL || global.__FORCE_DEMO);
 
   function withBusy(btn, fn) {
     return async function (...args) {
@@ -85,13 +85,14 @@
             const editCode = code || ('KC5-' + Math.random().toString(36).slice(2, 10).toUpperCase());
             const files = (payload && payload.files) || {};
             const has = (k) => !!(files[k] && files[k].dataUrl);
-            // demo: treat provided uploads as present; for update without file assume partial
+            const kepalaIn = Array.isArray(payload && payload.kepala) ? payload.kepala : [];
+            const hasKepalaFoto = has('fotoKepala') || has('kepala_1') || kepalaIn.some((_, i) => has('kepala_' + (i + 1)));
             const logo = has('logo') || !!code;
             const jerseyUtama = has('jerseyUtama') || !!code;
             const fotoKapten = has('fotoKapten') || !!code;
-            const fotoKepala = has('fotoKepala') || !!code;
+            const fotoKepala = hasKepalaFoto || !!code;
             const n = [logo, jerseyUtama, fotoKapten, fotoKepala].filter(Boolean).length;
-            const kit = { logo, jerseyUtama, fotoKapten, fotoKepala, jerseyCadangan: has('jerseyCadangan'), lengkap: n===4, persen: Math.round(n/4*100) };
+            const kit = { logo, jerseyUtama, fotoKapten, fotoKepala, jerseyCadangan: has('jerseyCadangan'), lengkap: n===4, persen: Math.round(n/4*100), jumlahKepala: Math.max(kepalaIn.length, fotoKepala ? 1 : 0) };
             resolve({
               ok: true,
               demo: true,
@@ -99,10 +100,15 @@
               editCode: code ? undefined : editCode,
               updated: !!code,
               kit: kit,
+              kepala: kepalaIn,
               message: code
                 ? 'MODE DEMO: kit diperbarui (tidak disimpan permanen).'
                 : 'MODE DEMO: kit baru (tidak disimpan). Simpan kode edit untuk pembaruan nanti.'
             });
+            break;
+          }
+          case 'uploadKitFile': {
+            resolve({ ok: true, demo: true, key: payload && payload.key, url: 'assets/sintang_sm.png', message: 'MODE DEMO: file diterima.' });
             break;
           }
           case 'adminLogin': {
@@ -132,10 +138,19 @@
   }
 
   function demoCsv(teams) {
-    const h = ['id','status','jenisInstansi','namaInstansi','namaTim','namaKapten','namaKepala','warnaJersey','kontakNama','kontakWA'];
+    const h = ['id','status','jenisInstansi','namaInstansi','namaTim','namaKapten','namaKepala','kepalaSemua','timGabungan','anggotaFaskes','warnaJersey','kontakNama','kontakWA'];
     const rows = [h.join(',')];
     teams.forEach(t => {
-      rows.push(h.map(k => '"' + String(t[k] || '').replace(/"/g, '""') + '"').join(','));
+      const kepala = Array.isArray(t.kepala) ? t.kepala : [];
+      const map = {
+        id: t.id, status: t.status, jenisInstansi: t.jenisInstansi, namaInstansi: t.namaInstansi,
+        namaTim: t.namaTim, namaKapten: t.namaKapten, namaKepala: t.namaKepala || (kepala[0] && kepala[0].nama) || '',
+        kepalaSemua: kepala.map(k => k.nama + (k.instansi ? ' (' + k.instansi + ')' : '')).join(' | '),
+        timGabungan: t.timGabungan ? 'ya' : 'tidak',
+        anggotaFaskes: t.anggotaFaskes || '',
+        warnaJersey: t.warnaJersey, kontakNama: t.kontakNama, kontakWA: t.kontakWA
+      };
+      rows.push(h.map(k => '"' + String(map[k] || '').replace(/"/g, '""') + '"').join(','));
     });
     return rows.join('\n');
   }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#033B7E">
-<meta name="description" content="Kit Faskes Peserta KADINKES CUP Seri V 2026 — unggah logo, jersey, foto kapten & kepala faskes">
+<meta name="description" content="Kit Faskes Peserta KADINKES CUP Seri V 2026 — unggah logo, jersey, foto kapten & multi kepala/pimpinan">
 <title>Kit Faskes · KADINKES CUP Seri V 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -96,7 +96,7 @@
           <article class="feature reveal">
             <div class="ico">03</div>
             <h3>Isi Kit Faskes</h3>
-            <p>Wajib: logo tim, jersey utama, foto kapten, foto kepala/pimpinan. Opsional: jersey cadangan.</p>
+            <p>Wajib: logo tim, jersey utama, foto kapten, foto kepala/pimpinan (bisa lebih dari satu untuk tim gabungan). Opsional: jersey cadangan.</p>
           </article>
         </div>
       </div>
@@ -190,9 +190,6 @@
             <label class="field">Nama kapten *
               <input type="text" name="namaKapten" required maxlength="80">
             </label>
-            <label class="field">Nama Kepala / Direktur / Pimpinan Instansi *
-              <input type="text" name="namaKepala" required maxlength="100" placeholder="Kepala Puskesmas / Direktur RS / Pimpinan">
-            </label>
             <label class="field">Nama kontak / manajer *
               <input type="text" name="kontakNama" required maxlength="80">
             </label>
@@ -203,9 +200,27 @@
             <label class="field">Warna jersey utama
               <input type="text" name="warnaJersey" maxlength="60" placeholder="Navy & Lime">
             </label>
-            <label class="field">Catatan (opsional)
+            <label class="field full">Catatan (opsional)
               <input type="text" name="catatan" maxlength="200" placeholder="Kategori putra/putri, dll.">
             </label>
+
+            <div class="full kepala-section">
+              <div class="kepala-head">
+                <strong style="color:var(--navy)">Kepala / Pimpinan (bisa lebih dari satu)</strong>
+                <span class="hint" style="display:block;margin-top:4px">Untuk tim gabungan, tambah pimpinan tiap faskes asal. Maksimal 5.</span>
+              </div>
+              <label class="check-row" style="margin:10px 0 8px">
+                <input type="checkbox" name="timGabungan" id="chkTimGabungan" value="1">
+                <span>Tim gabungan (lebih dari satu faskes/instansi)</span>
+              </label>
+              <label class="field full" id="anggotaWrap" hidden>
+                Daftar faskes / instansi anggota *
+                <textarea name="anggotaFaskes" id="anggotaFaskes" rows="2" maxlength="400" placeholder="Contoh: Puskesmas A, Puskesmas B, RS C"></textarea>
+                <span class="hint">Tampil di kartu &amp; detail kit</span>
+              </label>
+              <div id="kepalaList" class="kepala-list" aria-live="polite"></div>
+              <button type="button" class="btn btn-outline" id="btnAddKepala" style="margin-top:8px">+ Tambah Kepala/Pimpinan</button>
+            </div>
 
             <div class="full"><strong style="color:var(--navy)">Unggah aset kit</strong>
               <span style="display:block;color:var(--muted);font-size:.82rem;font-weight:500">JPG/PNG/WebP · dikompres otomatis (maks ±1600px). Saat memperbarui, kosongkan file yang tidak diubah.</span>
@@ -214,13 +229,6 @@
             <div class="upload" data-upload="fotoKapten">
               <img class="preview" alt="Preview kapten">
               <div class="lbl">📷 Foto Kapten *</div>
-              <div class="name"></div>
-              <input type="file" accept="image/jpeg,image/png,image/webp">
-              <div class="progress"><i></i></div>
-            </div>
-            <div class="upload" data-upload="fotoKepala">
-              <img class="preview" alt="Preview kepala">
-              <div class="lbl">📷 Foto Kepala / Direktur / Pimpinan *</div>
               <div class="name"></div>
               <input type="file" accept="image/jpeg,image/png,image/webp">
               <div class="progress"><i></i></div>
@@ -266,7 +274,7 @@
     Dinas Kesehatan Kabupaten Sintang
     <div class="credits">
       Penyusun: <strong>Anara Tech</strong><br>
-      Versi <span id="versiLabel">1.0.2</span>
+      Versi <span id="versiLabel">1.0.4</span>
     </div>
   </div>
 </footer>
