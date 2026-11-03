@@ -403,7 +403,211 @@
     try { return JSON.stringify(payload).length; } catch (_) { return 0; }
   }
 
+
+  let ownerSession = null; // { team, editCode }
+
+  function statusLabel(st) {
+    if (st === 'verified') return 'Kit terverifikasi';
+    if (st === 'rejected') return 'Ditolak';
+    return 'Menunggu verifikasi';
+  }
+  function statusBadgeHtml(st) {
+    if (st === 'verified') return '<span class="badge badge-ok">Kit terverifikasi</span>';
+    if (st === 'rejected') return '<span class="badge badge-demo">Ditolak</span>';
+    return '<span class="badge badge-pending">Menunggu verifikasi</span>';
+  }
+
+  function renderOwnerSummary(team) {
+    const box = $('#cekResultCard');
+    if (!box) return;
+    if (!team) { box.innerHTML = '<div class="alert alert-err">Data kit tidak tersedia.</div>'; return; }
+    const k = kitMeta(team);
+    const kepala = kepalaOf(team);
+    const gabungan = team.timGabungan
+      ? '<div class="owner-kv"><span>Tim gabungan</span><strong>' + esc(team.anggotaFaskes || 'Ya') + '</strong></div>'
+      : '';
+    const kepalaHtml = kepala.length
+      ? ('<h4 style="margin:16px 0 8px;color:var(--navy)">Kepala / Pimpinan</h4><div class="owner-kepala">' +
+        kepala.map((kh, i) =>
+          '<figure>' + imgOrPh(kh.fotoUrl, 'Pimpinan ' + (i + 1)) +
+          '<figcaption>' + esc(kh.nama || ('Pimpinan ' + (i + 1))) +
+          (kh.instansi ? '<div class="cap-sub">' + esc(kh.instansi) + '</div>' : '') +
+          '</figcaption></figure>'
+        ).join('') + '</div>')
+      : '';
+    box.innerHTML =
+      '<div class="owner-top">' +
+        '<div class="owner-logo">' + (team.logoUrl ? imgOrPh(team.logoUrl, 'Logo') : '<img src="assets/kc5_sm.png" alt="Logo">') + '</div>' +
+        '<div class="owner-meta">' +
+          '<div class="pill-row" style="margin-bottom:4px;gap:6px;flex-wrap:wrap">' +
+            '<span class="badge ' + jenisBadgeClass(team.jenisInstansi) + '">' + esc(jenisLabel(team.jenisInstansi)) + '</span>' +
+            statusBadgeHtml(team.status) +
+            (team.timGabungan ? '<span class="badge badge-gabungan">Tim gabungan</span>' : '') +
+            (team._contoh ? '<span class="badge badge-demo">CONTOH</span>' : '') +
+          '</div>' +
+          '<h3>' + esc(team.namaTim || '—') + '</h3>' +
+          '<div class="meta">' + esc(team.namaInstansi || '') + '</div>' +
+          '<div class="meta" style="margin-top:4px">ID: <strong>' + esc(team.id || '—') + '</strong></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-card" style="margin:0 0 12px;padding:12px;box-shadow:none">' + kitBar(team) + '</div>' +
+      '<div class="owner-grid">' +
+        '<div class="owner-kv"><span>Kapten</span><strong>' + esc(team.namaKapten || '—') + '</strong></div>' +
+        '<div class="owner-kv"><span>Warna jersey</span><strong>' + esc(team.warnaJersey || '—') + '</strong></div>' +
+        '<div class="owner-kv"><span>Kontak</span><strong>' + esc(team.kontakNama || '—') + '</strong></div>' +
+        '<div class="owner-kv"><span>WA kontak</span><strong>' + esc(team.kontakWA || '—') + '</strong></div>' +
+        '<div class="owner-kv"><span>Status verifikasi</span><strong>' + esc(statusLabel(team.status)) + '</strong></div>' +
+        '<div class="owner-kv"><span>Kelengkapan kit</span><strong>' + (k.persen != null ? k.persen + '%' : '—') + '</strong></div>' +
+        gabungan +
+        (team.catatan ? '<div class="owner-kv"><span>Catatan</span><strong>' + esc(team.catatan) + '</strong></div>' : '') +
+      '</div>' +
+      kepalaHtml +
+      '<h4 style="margin:16px 0 8px;color:var(--navy)">Aset kit</h4>' +
+      '<div class="owner-thumbs">' +
+        '<figure>' + imgOrPh(team.logoUrl, 'Logo') + '<figcaption>Logo</figcaption></figure>' +
+        '<figure>' + imgOrPh(team.jerseyUtamaUrl, 'Jersey utama') + '<figcaption>Jersey utama</figcaption></figure>' +
+        '<figure>' + imgOrPh(team.jerseyCadanganUrl, 'Jersey cadangan') + '<figcaption>Jersey cadangan</figcaption></figure>' +
+        '<figure>' + imgOrPh(team.fotoKaptenUrl, 'Kapten') + '<figcaption>Foto kapten</figcaption></figure>' +
+      '</div>';
+    observeReveal(box);
+  }
+
+  function setUploadPreviewFromUrl(key, url, label) {
+    const box = $('.upload[data-upload="' + key + '"]');
+    if (!box || !url) return;
+    const preview = $('.preview', box);
+    const nameEl = $('.name', box);
+    if (preview) preview.src = url;
+    box.classList.add('has-file');
+    if (nameEl) nameEl.textContent = (label || key) + ' · foto tersimpan (unggah baru untuk mengganti)';
+    // jangan isi uploads[key] — biarkan server mempertahankan file lama
+  }
+
+  function prefillFormFromTeam(team, editCode) {
+    const form = $('#formDaftar');
+    if (!form || !team) return;
+    form.reset();
+    Object.keys(uploads).forEach(k => delete uploads[k]);
+    $$('.upload').forEach(u => {
+      u.classList.remove('has-file');
+      const n = $('.name', u); if (n) n.textContent = '';
+      const p = $('.preview', u); if (p) p.removeAttribute('src');
+    });
+    const set = (name, val) => {
+      const el = form.elements[name];
+      if (el) el.value = val == null ? '' : String(val);
+    };
+    set('editCode', editCode || '');
+    set('jenisInstansi', team.jenisInstansi || '');
+    set('namaInstansi', team.namaInstansi || '');
+    set('namaTim', team.namaTim || '');
+    set('namaKapten', team.namaKapten || '');
+    set('kontakNama', team.kontakNama || '');
+    set('kontakWA', team.kontakWA || '');
+    set('warnaJersey', team.warnaJersey || '');
+    set('catatan', team.catatan || '');
+    const chk = $('#chkTimGabungan');
+    const anggotaWrap = $('#anggotaWrap');
+    if (chk) {
+      chk.checked = !!team.timGabungan;
+      if (anggotaWrap) anggotaWrap.hidden = !chk.checked;
+    }
+    set('anggotaFaskes', team.anggotaFaskes || '');
+
+    $('#kepalaList').innerHTML = '';
+    kepalaCount = 0;
+    const kepala = kepalaOf(team);
+    if (!kepala.length) addKepalaRow();
+    else kepala.forEach((kh) => addKepalaRow(kh));
+    // preview foto kepala dari URL tersimpan
+    kepala.forEach((kh, i) => {
+      if (kh.fotoUrl) setUploadPreviewFromUrl('kepala_' + (i + 1), kh.fotoUrl, 'Pimpinan ' + (i + 1));
+    });
+    setUploadPreviewFromUrl('fotoKapten', team.fotoKaptenUrl, 'Kapten');
+    setUploadPreviewFromUrl('logo', team.logoUrl, 'Logo');
+    setUploadPreviewFromUrl('jerseyUtama', team.jerseyUtamaUrl, 'Jersey utama');
+    setUploadPreviewFromUrl('jerseyCadangan', team.jerseyCadanganUrl, 'Jersey cadangan');
+
+    const hint = $('#daftarHint');
+    if (hint) {
+      hint.className = 'alert alert-ok';
+      hint.innerHTML = 'Mode pembaruan aktif untuk <strong>' + esc(team.namaTim || team.id) +
+        '</strong>. Kode edit sudah terisi. Ubah field/foto yang perlu, lalu kirim — data tidak digandakan.';
+    }
+    const btn = $('#btnSubmit');
+    if (btn) btn.textContent = 'Simpan Pembaruan Kit';
+  }
+
+  function resetCekUI() {
+    ownerSession = null;
+    const wrap = $('#cekResultWrap');
+    if (wrap) wrap.hidden = true;
+    const card = $('#cekResultCard');
+    if (card) card.innerHTML = '';
+    const msg = $('#cekMsg');
+    if (msg) { msg.hidden = true; msg.textContent = ''; }
+    const form = $('#formCekKode');
+    if (form) form.reset();
+  }
+
+  function setupCekKode() {
+    const form = $('#formCekKode');
+    if (!form) return;
+    const btn = $('#btnCekKode');
+    const goHome = () => { resetCekUI(); location.hash = '#/'; };
+
+    $('#btnCekBatal') && $('#btnCekBatal').addEventListener('click', goHome);
+    $('#btnCekKeluar') && $('#btnCekKeluar').addEventListener('click', goHome);
+
+    $('#btnEditKit') && $('#btnEditKit').addEventListener('click', FutsalAPI.withBusy($('#btnEditKit'), async () => {
+      if (!ownerSession || !ownerSession.team) {
+        const msg = $('#cekMsg');
+        if (msg) { msg.hidden = false; msg.className = 'alert alert-err'; msg.textContent = 'Belum ada data kit tervalidasi.'; }
+        return;
+      }
+      prefillFormFromTeam(ownerSession.team, ownerSession.editCode);
+      location.hash = '#/kit';
+      setTimeout(() => {
+        const formEl = $('#formDaftar');
+        if (formEl) window.scrollTo({ top: formEl.offsetTop - 70, behavior: 'smooth' });
+      }, 120);
+    }));
+
+    form.addEventListener('submit', FutsalAPI.withBusy(btn, async (e) => {
+      e.preventDefault();
+      const msg = $('#cekMsg');
+      const wrap = $('#cekResultWrap');
+      msg.hidden = true;
+      wrap.hidden = true;
+      const identifikasi = String(($('#cekIdentifikasi') && $('#cekIdentifikasi').value) || '').trim();
+      const editCode = String(($('#cekEditCode') && $('#cekEditCode').value) || '').trim();
+      if (!identifikasi || !editCode) {
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = 'Isi identitas tim dan kode edit.';
+        return;
+      }
+      try {
+        const res = await FutsalAPI.post('cekKodeEdit', { identifikasi, editCode, id: identifikasi, namaTim: identifikasi });
+        if (!res || !res.team) throw new Error('Respons tidak memuat data kit.');
+        ownerSession = { team: res.team, editCode: res.editCode || editCode };
+        renderOwnerSummary(res.team);
+        wrap.hidden = false;
+        msg.hidden = false; msg.className = 'alert alert-ok';
+        msg.textContent = res.message || 'Kode edit valid.';
+        setTimeout(() => {
+          wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 60);
+      } catch (err) {
+        ownerSession = null;
+        wrap.hidden = true;
+        msg.hidden = false; msg.className = 'alert alert-err';
+        msg.textContent = err.message || 'Gagal memeriksa kode edit.';
+      }
+    }));
+  }
+
   function setupForm() {
+
     setupUploads();
     const form = $('#formDaftar');
     const btn = $('#btnSubmit');
@@ -579,13 +783,14 @@
     home: $('#view-home'),
     galeri: $('#view-galeri'),
     detail: $('#view-detail'),
-    daftar: $('#view-daftar')
+    daftar: $('#view-daftar'),
+    cek: $('#view-cek')
   };
 
   function setActiveNav(path) {
     $$('#navLinks a[data-nav]').forEach(a => {
       const href = a.getAttribute('href');
-      const map = { home: '#/', galeri: '#/galeri', kit: '#/kit', daftar: '#/kit' };
+      const map = { home: '#/', galeri: '#/galeri', kit: '#/kit', daftar: '#/kit', cek: '#/cek-kode' };
       a.classList.toggle('active', href === map[path] || (path === 'home' && href === '#/'));
     });
   }
@@ -601,6 +806,8 @@
       views.galeri.classList.add('active'); setActiveNav('galeri');
       if (!cacheTeams.length) await loadTeams();
       renderGaleri();
+    } else if (page === 'cek-kode' || page === 'cek') {
+      views.cek.classList.add('active'); setActiveNav('cek');
     } else if (page === 'kit' || page === 'daftar') {
       views.daftar.classList.add('active'); setActiveNav('kit');
     } else if (page === 'tim' && parts[1]) {
@@ -617,12 +824,13 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.7';
+    $('#versiLabel').textContent = C.VERSI || '1.0.8';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);
     $('#qJenis') && $('#qJenis').addEventListener('change', renderGaleri);
     setupForm();
+    setupCekKode();
     window.addEventListener('hashchange', route);
     route();
   }

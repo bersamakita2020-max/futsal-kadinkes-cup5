@@ -32,32 +32,38 @@
   }
 
   async function post(action, payload) {
-    if (demo()) return demoHandler(action, payload);
-    const url = C().API_URL;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, ...payload })
-    });
-    const text = await res.text();
     let data;
-    try { data = JSON.parse(text); } catch (e) {
-      throw new Error('Respons server tidak valid.');
+    if (demo()) {
+      data = await demoHandler(action, payload);
+    } else {
+      const url = C().API_URL;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      const text = await res.text();
+      try { data = JSON.parse(text); } catch (e) {
+        throw new Error('Respons server tidak valid.');
+      }
     }
-    if (!data.ok) throw new Error(data.error || 'Gagal memproses permintaan.');
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Gagal memproses permintaan.');
     return data;
   }
 
   async function get(action, params) {
-    if (demo()) return demoHandler(action, params || {});
-    const q = new URLSearchParams({ action, ...(params || {}) });
-    const res = await fetch(C().API_URL + '?' + q.toString(), { method: 'GET' });
-    const text = await res.text();
     let data;
-    try { data = JSON.parse(text); } catch (e) {
-      throw new Error('Respons server tidak valid.');
+    if (demo()) {
+      data = await demoHandler(action, params || {});
+    } else {
+      const q = new URLSearchParams({ action, ...(params || {}) });
+      const res = await fetch(C().API_URL + '?' + q.toString(), { method: 'GET' });
+      const text = await res.text();
+      try { data = JSON.parse(text); } catch (e) {
+        throw new Error('Respons server tidak valid.');
+      }
     }
-    if (!data.ok) throw new Error(data.error || 'Gagal memuat data.');
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Gagal memuat data.');
     return data;
   }
 
@@ -104,6 +110,39 @@
               message: code
                 ? 'MODE DEMO: kit diperbarui (tidak disimpan permanen).'
                 : 'MODE DEMO: kit baru (tidak disimpan). Simpan kode edit untuk pembaruan nanti.'
+            });
+            break;
+          }
+          case 'cekKodeEdit': {
+            const code = String((payload && payload.editCode) || '').trim().toUpperCase();
+            const ident = String((payload && (payload.identifikasi || payload.id || payload.namaTim)) || '').trim();
+            if (!code) { resolve({ ok: false, error: 'Kode edit wajib diisi.' }); break; }
+            if (!ident) { resolve({ ok: false, error: 'Isi ID Tim atau Nama Tim sebagai identitas.' }); break; }
+            // Demo: kode DEMO-EDIT / demo / 1234-EDIT menerima tim yang cocok identitasnya
+            const okCodes = ['DEMO-EDIT', 'KC5-DEMOEDIT', 'DEMO'];
+            if (!okCodes.includes(code) && code !== 'KC5-DEMODEMO') {
+              resolve({ ok: false, error: 'Kode edit tidak valid. Periksa kembali atau tunggu sebentar jika sudah beberapa kali salah.' });
+              break;
+            }
+            const idUp = ident.toUpperCase();
+            const idLow = ident.toLowerCase();
+            let t = D.teams.find(x => String(x.id || '').toUpperCase() === idUp);
+            if (!t) t = D.teams.find(x => String(x.namaTim || '').toLowerCase() === idLow);
+            if (!t) t = D.teams.find(x => String(x.namaTim || '').toLowerCase().includes(idLow) && idLow.length >= 4);
+            if (!t) {
+              resolve({ ok: false, error: 'Identitas tim tidak cocok dengan kode edit. Pastikan ID Tim / Nama Tim benar.' });
+              break;
+            }
+            // sertakan kontak untuk pemilik (demo teams sudah punya)
+            resolve({
+              ok: true,
+              demo: true,
+              editCode: code,
+              team: Object.assign({}, t, {
+                catatan: t.catatan || 'Catatan contoh pemilik',
+                updatedAt: t.updatedAt || t.createdAt
+              }),
+              message: 'Kode edit valid. Data kit siap ditinjau. (MODE DEMO)'
             });
             break;
           }

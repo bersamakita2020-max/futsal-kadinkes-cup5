@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1.0.7">
+<link rel="stylesheet" href="css/app.css?v=1.0.8">
 <link rel="icon" href="icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -33,6 +33,7 @@
     <nav class="nav-links" id="navLinks">
       <a href="#/" data-nav>Beranda</a>
       <a href="#/galeri" data-nav>Galeri Peserta</a>
+      <a href="#/cek-kode" data-nav>Cek Kode Edit</a>
       <a href="#/kit" data-nav class="btn btn-primary" style="padding:8px 14px">Kit Faskes</a>
       <a href="admin.html">Admin</a>
     </nav>
@@ -58,6 +59,7 @@
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#/kit" data-nav>Unggah Kit Faskes</a>
+            <a class="btn btn-secondary" href="#/cek-kode" data-nav>Cek Kode Edit</a>
             <a class="btn btn-secondary" href="#/galeri" data-nav>Galeri Peserta</a>
           </div>
           <div class="logo-strip" aria-label="Logo mitra">
@@ -156,6 +158,50 @@
     <section class="block">
       <div class="container" id="detailBox">
         <div class="empty">Memuat detail kit…</div>
+      </div>
+    </section>
+  </section>
+
+
+  <!-- CEK KODE EDIT -->
+  <section class="view" id="view-cek">
+    <section class="block">
+      <div class="container" style="max-width:min(860px,100%)">
+        <div class="section-head">
+          <h2>Cek Kode Edit</h2>
+          <p>Masukkan identitas tim dan kode edit untuk meninjau data kit Anda, lalu lanjutkan ke formulir edit.</p>
+        </div>
+        <div class="alert alert-info" id="cekHint">
+          Kode edit diberikan sekali setelah unggah pertama. Identitas bisa berupa <strong>ID Tim</strong> (contoh KC5-…) atau <strong>Nama Tim</strong>.
+        </div>
+        <form class="form-card reveal in" id="formCekKode" novalidate>
+          <div class="form-grid">
+            <label class="field full">ID Tim atau Nama Tim *
+              <input type="text" name="identifikasi" id="cekIdentifikasi" required maxlength="120" placeholder="Contoh: KC5-20261103-ABCD1234 atau FC Nakes …" autocomplete="organization">
+              <span class="hint">Sesuaikan dengan data kit yang sudah diunggah</span>
+            </label>
+            <label class="field full">Kode edit *
+              <input type="text" name="editCode" id="cekEditCode" required maxlength="24" placeholder="Contoh: KC5-AB12CD34" autocomplete="off" spellcheck="false">
+            </label>
+          </div>
+          <div id="cekMsg" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-navy" id="btnCekKode">Cek Kode Edit</button>
+            <button type="button" class="btn btn-outline" id="btnCekBatal">Batal / Keluar</button>
+          </div>
+        </form>
+
+        <div id="cekResultWrap" hidden>
+          <div class="section-head" style="margin-top:28px">
+            <h2>Ringkasan Kit Anda</h2>
+            <p>Data berikut hanya tampil setelah kode edit tervalidasi. Tinjau lalu tekan <strong>Edit Kit</strong> untuk memperbarui.</p>
+          </div>
+          <div id="cekResultCard" class="owner-summary reveal"></div>
+          <div class="form-actions" style="margin-top:16px;flex-wrap:wrap">
+            <button type="button" class="btn btn-primary" id="btnEditKit" style="min-width:min(220px,100%)">Edit Kit</button>
+            <button type="button" class="btn btn-outline" id="btnCekKeluar">Batal / Keluar</button>
+          </div>
+        </div>
       </div>
     </section>
   </section>
@@ -280,14 +326,14 @@
     Dinas Kesehatan Kabupaten Sintang
     <div class="credits">
       Penyusun: <strong>Anara Tech</strong><br>
-      Versi <span id="versiLabel">1.0.7</span>
+      Versi <span id="versiLabel">1.0.8</span>
     </div>
   </div>
 </footer>
 
-<script src="js/config.js?v=1.0.7"></script>
-<script src="js/demo-data.js?v=1.0.7"></script>
-<script src="js/api.js?v=1.0.7"></script>
-<script src="js/app.js?v=1.0.7"></script>
+<script src="js/config.js?v=1.0.8"></script>
+<script src="js/demo-data.js?v=1.0.8"></script>
+<script src="js/api.js?v=1.0.8"></script>
+<script src="js/app.js?v=1.0.8"></script>
 </body>
 </html>
