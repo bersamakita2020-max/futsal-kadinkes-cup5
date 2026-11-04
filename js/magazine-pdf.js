@@ -14,13 +14,14 @@
   const RED = [220, 38, 38];
   const GREEN = [22, 163, 74];
 
-  const JENIS_ORDER = ['Puskesmas', 'RS', 'Labkesda', 'BPJS', 'DP3AP2KB'];
+  const JENIS_ORDER = ['Puskesmas', 'RS', 'Labkesda', 'BPJS', 'DP3AP2KB', 'Dinkes'];
   const JENIS_LABEL = {
     Puskesmas: 'Puskesmas',
     RS: 'Rumah Sakit',
     Labkesda: 'Labkesda',
     BPJS: 'BPJS',
-    DP3AP2KB: 'DP3AP2KB'
+    DP3AP2KB: 'DP3AP2KB',
+    Dinkes: 'Dinas Kesehatan'
   };
 
   function rgb(doc, c) { doc.setTextColor(c[0], c[1], c[2]); }

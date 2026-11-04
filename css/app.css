@@ -939,3 +939,5 @@ body.modal-open { overflow: hidden; }
   border-radius: inherit;
   transition: width .2s ease;
 }
+
+.badge-dinkes { background: rgba(234, 88, 12, .12); color: #c2410c; }

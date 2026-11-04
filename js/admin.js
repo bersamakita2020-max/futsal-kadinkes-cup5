@@ -32,6 +32,7 @@
     if (j === 'Labkesda') return 'Labkesda';
     if (j === 'BPJS') return 'BPJS';
     if (j === 'DP3AP2KB') return 'DP3AP2KB';
+    if (j === 'Dinkes') return 'Dinas Kesehatan';
     return j || 'Puskesmas';
   }
   function normalizeKategori(v) {
@@ -1328,7 +1329,7 @@
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.14';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.15';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;

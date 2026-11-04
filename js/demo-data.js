@@ -7,6 +7,7 @@ window.FUTSAL_DEMO = {
     labkesda: 1,
     bpjs: 1,
     dp3ap2kb: 1,
+    dinkes: 1,
     verified: 4,
     pending: 2,
     kitLengkap: 4,
@@ -191,3 +192,12 @@ window.FUTSAL_DEMO = {
     }
   ]
 };
+
+(function(){ var D=window.FUTSAL_DEMO; if(!D||!D.teams) return;
+  var src=D.teams.find(function(x){return x.jenisInstansi==='BPJS';}); if(!src) return;
+  var c=JSON.parse(JSON.stringify(src));
+  c.id='DEMO-007'; c.jenisInstansi='Dinkes'; c.namaInstansi='Dinas Kesehatan CONTOH Kab. Sintang';
+  c.namaTim='Dinkes CONTOH FC'; c.kategoriTim='Putra'; c.status='pending';
+  c.kepala=[{nama:'Kepala Dinas Kesehatan CONTOH',instansi:'Dinkes Kab. Sintang',fotoUrl:'',fileId:''}];
+  D.teams.push(c); if(D.stats){D.stats.total=(D.stats.total||0)+1;}
+})();
