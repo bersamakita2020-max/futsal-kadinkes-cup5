@@ -123,12 +123,12 @@
       u
     ];
   }
-  function imgOrPh(url, label) {
+  function imgOrPh(url, label, lb) {
     if (!url) return ph(label + ' (belum ada)');
     const list = driveFallbacks(url);
     const src = list[0];
     const alts = list.slice(1).join('|');
-    return '<img src="' + esc(src) + '" alt="' + esc(label) + '" loading="lazy" referrerpolicy="no-referrer" data-fallbacks="' + esc(alts) + '" onerror="window.__futsalImgErr&&window.__futsalImgErr(this)">';
+    return '<img' + (lb || '') + ' src="' + esc(src) + '" alt="' + esc(label) + '" loading="lazy" referrerpolicy="no-referrer" data-fallbacks="' + esc(alts) + '" onerror="window.__futsalImgErr&&window.__futsalImgErr(this)">';
   }
   window.__futsalImgErr = function (img) {
     const raw = img.getAttribute('data-fallbacks') || '';
@@ -138,12 +138,43 @@
     img.src = rest[0];
   };
 
+  // ===== Lightbox galeri publik (v1.0.16) =====
+  const lbTeams = {};
+  function lbAttr(t, key) {
+    if (!t || !t.id) return '';
+    lbTeams[t.id] = t;
+    return ' data-lb-team="' + esc(t.id) + '" data-lb-key="' + esc(key) + '" tabindex="0" role="button"';
+  }
+  function teamPhotos(t) {
+    const out = [];
+    const add = (key, url, label) => { if (url) out.push({ key: key, url: url, label: label, srcs: driveFallbacks(url) }); };
+    add('logo', t.logoUrl, 'Logo tim');
+    add('kapten', t.fotoKaptenUrl, 'Kapten' + (t.namaKapten ? ' · ' + t.namaKapten : ''));
+    kepalaOf(t).forEach((k, i) => add('kepala' + i, k.fotoUrl, 'Kepala/Pimpinan' + (k.nama ? ' · ' + k.nama : ' ' + (i + 1)) + (k.instansi ? ' (' + k.instansi + ')' : '')));
+    add('jerseyUtama', t.jerseyUtamaUrl, 'Jersey utama');
+    add('jerseyCadangan', t.jerseyCadanganUrl, 'Jersey cadangan');
+    return out;
+  }
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest('[data-lb-team]');
+    if (!el || !window.FutsalLightbox) return;
+    const t = lbTeams[el.getAttribute('data-lb-team')];
+    if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    const items = teamPhotos(t);
+    const idx = Math.max(0, items.findIndex(x => x.key === el.getAttribute('data-lb-key')));
+    window.FutsalLightbox.open(items, idx, t.namaTim || '');
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-lb-team]')) { e.preventDefault(); e.target.click(); }
+  });
+
   function avatarStack(t) {
     const list = kepalaOf(t).slice(0, 5);
     if (!list.length) return '';
     const avatars = list.map((k, i) => {
       if (k.fotoUrl) {
-        return '<span class="avatar" style="z-index:' + (10 - i) + '"><img src="' + esc(k.fotoUrl) + '" alt="' + esc(k.nama || 'Pimpinan') + '"></span>';
+        return '<span class="avatar" style="z-index:' + (10 - i) + '"><img' + lbAttr(t, 'kepala' + i) + ' src="' + esc(k.fotoUrl) + '" alt="' + esc(k.nama || 'Pimpinan') + '"></span>';
       }
       return '<span class="avatar avatar-ph" style="z-index:' + (10 - i) + '" title="' + esc(k.nama || '') + '">' + esc((k.nama || '?').slice(0, 1).toUpperCase()) + '</span>';
     }).join('');
@@ -167,7 +198,7 @@
     return (
       '<article class="card team-card reveal">' +
         '<div class="cover">' +
-          '<span class="logo-badge"><img src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt="Logo ' + esc(t.namaTim) + '"></span>' +
+          '<span class="logo-badge"><img' + (t.logoUrl ? lbAttr(t, 'logo') : '') + ' src="' + esc(t.logoUrl || 'assets/kc5_sm.png') + '" alt="Logo ' + esc(t.namaTim) + '"></span>' +
           avatarStack(t) +
         '</div>' +
         '<div class="body">' +
@@ -179,8 +210,8 @@
           anggota +
           kitBar(t) +
           '<div class="team-mini">' +
-            '<figure>' + imgOrPh(t.fotoKaptenUrl, 'Kapten') + '<figcaption>Kapten: ' + esc(t.namaKapten) + '</figcaption></figure>' +
-            '<figure>' + imgOrPh(t.jerseyUtamaUrl, 'Jersey') + '<figcaption>Jersey utama</figcaption></figure>' +
+            '<figure>' + imgOrPh(t.fotoKaptenUrl, 'Kapten', lbAttr(t, 'kapten')) + '<figcaption>Kapten: ' + esc(t.namaKapten) + '</figcaption></figure>' +
+            '<figure>' + imgOrPh(t.jerseyUtamaUrl, 'Jersey', lbAttr(t, 'jerseyUtama')) + '<figcaption>Jersey utama</figcaption></figure>' +
           '</div>' +
           '<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">' +
             '<a class="btn btn-outline" style="width:100%" href="#/tim/' + esc(t.id) + '" data-nav>Lihat kit</a>' +
@@ -272,7 +303,7 @@
       const kepala = kepalaOf(t);
       const kepalaGrid = kepala.map((kh, i) =>
         '<figure class="reveal">' +
-          imgOrPh(kh.fotoUrl, 'Pimpinan ' + (i + 1)) +
+          imgOrPh(kh.fotoUrl, 'Pimpinan ' + (i + 1), lbAttr(t, 'kepala' + i)) +
           '<figcaption>' + esc(kh.nama || ('Pimpinan ' + (i + 1))) +
             (kh.instansi ? '<br><span class="cap-sub">' + esc(kh.instansi) + '</span>' : '') +
           '</figcaption></figure>'
@@ -286,7 +317,7 @@
       box.innerHTML =
         '<p><a href="#/galeri" data-nav>← Kembali ke galeri</a></p>' +
         '<div class="detail-hero reveal">' +
-          '<span class="logo-badge">' + (t.logoUrl ? imgOrPh(t.logoUrl, 'Logo') : '<img src="assets/kc5_sm.png" alt="Logo">') + '</span>' +
+          '<span class="logo-badge">' + (t.logoUrl ? imgOrPh(t.logoUrl, 'Logo', lbAttr(t, 'logo')) : '<img src="assets/kc5_sm.png" alt="Logo">') + '</span>' +
           '<div>' + demo +
             '<div class="pill-row" style="margin-bottom:8px">' +
               '<span class="pill">' + esc(jenisLabel(t.jenisInstansi)) + '</span>' +
@@ -304,11 +335,11 @@
         '<h3 class="section-sub">Kepala / Pimpinan</h3>' +
         '<div class="gallery-kepala stagger" style="margin-bottom:18px">' + (kepalaGrid || '<div class="empty">Belum ada data pimpinan.</div>') + '</div>' +
         '<div class="gallery-4 stagger" style="margin-bottom:18px">' +
-          '<figure class="reveal">' + imgOrPh(t.fotoKaptenUrl, 'Kapten') + '<figcaption>Kapten · ' + esc(t.namaKapten) + '</figcaption></figure>' +
-          '<figure class="reveal">' + imgOrPh(t.jerseyUtamaUrl, 'Jersey') + '<figcaption>Jersey utama</figcaption></figure>' +
-          '<figure class="reveal">' + imgOrPh(t.jerseyCadanganUrl || t.logoUrl, t.jerseyCadanganUrl ? 'Cadangan' : 'Logo') +
+          '<figure class="reveal">' + imgOrPh(t.fotoKaptenUrl, 'Kapten', lbAttr(t, 'kapten')) + '<figcaption>Kapten · ' + esc(t.namaKapten) + '</figcaption></figure>' +
+          '<figure class="reveal">' + imgOrPh(t.jerseyUtamaUrl, 'Jersey', lbAttr(t, 'jerseyUtama')) + '<figcaption>Jersey utama</figcaption></figure>' +
+          '<figure class="reveal">' + imgOrPh(t.jerseyCadanganUrl || t.logoUrl, t.jerseyCadanganUrl ? 'Cadangan' : 'Logo', lbAttr(t, t.jerseyCadanganUrl ? 'jerseyCadangan' : 'logo')) +
             '<figcaption>' + (t.jerseyCadanganUrl ? 'Jersey cadangan' : 'Logo tim') + '</figcaption></figure>' +
-          '<figure class="reveal">' + imgOrPh(t.logoUrl, 'Logo') + '<figcaption>Logo tim</figcaption></figure>' +
+          '<figure class="reveal">' + imgOrPh(t.logoUrl, 'Logo', lbAttr(t, 'logo')) + '<figcaption>Logo tim</figcaption></figure>' +
         '</div>' +
         '<div class="form-actions" style="margin-top:8px">' + editKitButtonHtml(t) + '</div>';
       observeReveal(box);
@@ -876,7 +907,7 @@
 
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
-    $('#versiLabel').textContent = C.VERSI || '1.0.15';
+    $('#versiLabel').textContent = C.VERSI || '1.0.16';
     $('#pillTanggal').textContent = C.TANGGAL_EVENT || '8–12 November 2026';
     $('#menuToggle').onclick = () => $('#navLinks').classList.toggle('open');
     $('#qSearch') && $('#qSearch').addEventListener('input', renderGaleri);
