@@ -952,7 +952,7 @@ body.modal-open { overflow: hidden; }
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 html.klb-lock, html.klb-lock body { overflow: hidden; }
-.klb { position: fixed; inset: 0; z-index: 9999; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: auto 1fr auto;
+.klb { position: fixed; inset: 0; height: 100vh; height: 100dvh; z-index: 9999; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: auto 1fr auto;
   background: radial-gradient(circle at 50% 30%, rgba(26,166,160,.28), transparent 60%), rgba(2,22,52,.94);
   backdrop-filter: blur(6px); opacity: 0; transition: opacity .22s ease; touch-action: none; color: #fff; }
 .klb.open { opacity: 1; }
@@ -969,9 +969,10 @@ html.klb-lock, html.klb-lock body { overflow: hidden; }
 .klb-nav { width: 48px; height: 48px; align-self: center; margin: 0 10px; }
 .klb.single .klb-nav { visibility: hidden; }
 .klb-stage { position: relative; display: grid; place-items: center; overflow: hidden; min-height: 0; }
-.klb-img { width: min(100%, 760px); height: auto; max-height: 100%; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,.5)); border-radius: 14px; user-select: none;
-  opacity: 0; transform: scale(.92);
-  transition: opacity .25s ease, transform .25s ease; will-change: transform; }
+.klb-img { position: absolute; left: 50%; top: 50%; width: auto; height: auto; max-width: none; max-height: none;
+  object-fit: contain; object-position: center; border-radius: 12px; user-select: none; display: block;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.5)); opacity: 0; transform-origin: center center;
+  transform: translate(-50%, -50%) scale(.94); transition: opacity .25s ease, transform .25s ease; will-change: transform; }
 .klb-img.in { opacity: 1; }
 .klb.zoomed .klb-img { cursor: grab; transition: opacity .25s ease; }
 .klb-spin { position: absolute; width: 46px; height: 46px; border-radius: 50%; border: 4px solid rgba(255,255,255,.18); border-top-color: #CCE310; animation: klbspin .8s linear infinite; }
@@ -983,7 +984,7 @@ html.klb-lock, html.klb-lock body { overflow: hidden; }
 .klb-cap span { display: inline-block; margin: 0 auto; padding: 3px 12px; border-radius: 999px; background: rgba(26,166,160,.35); border: 1px solid rgba(26,166,160,.7); font-size: .88rem; }
 @media (max-width: 640px) {
   .klb { grid-template-columns: 1fr; }
-  .klb-stage { grid-column: 1; grid-row: 2; padding: 0 8px; }
+  .klb-stage { grid-column: 1; grid-row: 2; }
   .klb-nav { position: absolute; bottom: 86px; width: 44px; height: 44px; z-index: 2; }
   .klb-prev { left: 12px; } .klb-next { right: 12px; }
   .klb-btn[data-act^="zoom"] { display: none; }
