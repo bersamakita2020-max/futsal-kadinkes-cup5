@@ -990,3 +990,75 @@ html.klb-lock, html.klb-lock body { overflow: hidden; }
   .klb-btn[data-act^="zoom"] { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .klb, .klb-img { transition: none; } }
+
+/* .btn and label.field set display, which otherwise overrides the hidden attribute. */
+.btn[hidden],
+label.field[hidden] {
+  display: none !important;
+}
+
+/* hidden attribute must win over .admin-list { display:flex } */
+#adminList[hidden],
+#arsipList[hidden],
+#adminRows[hidden],
+#kontrolPanel[hidden],
+#adminFilters[hidden] {
+  display: none !important;
+}
+
+/* Kontrol kit sesuai jadwal — admin, hanya baca */
+.kontrol-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.kontrol-stat {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.kontrol-stat b {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  color: var(--navy);
+  line-height: 1;
+}
+.kontrol-stat span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .75rem;
+}
+.kontrol-meta { color: var(--muted); font-size: .82rem; margin: 8px 0 12px; overflow-wrap: anywhere; }
+.kontrol-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.kontrol-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+.kontrol-card h3 { margin: 6px 0; color: var(--navy); font-size: 1.05rem; overflow-wrap: anywhere; }
+.kontrol-kit {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.kontrol-miss { color: var(--danger); margin: 4px 0; font-size: .86rem; overflow-wrap: anywhere; }
+.kontrol-ok { color: var(--ok); margin: 4px 0; font-size: .86rem; }
+.kontrol-outside { margin: 6px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.kontrol-assets { margin: 4px 0; }
+#kontrolPanel, #kontrolBody { max-width: 100%; min-width: 0; }
+@media (max-width: 640px) {
+  .kontrol-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kontrol-actions .btn { width: 100%; }
+}

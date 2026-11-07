@@ -6,6 +6,9 @@
   let teams = [];
   let arsipTeams = [];
   let previewTeam = null;
+  let previewReadOnly = false;
+  let kitLoadState = 'idle';
+  let kitLoadError = '';
   let lightboxCtx = null;
   let hapusTarget = null;
   let adminTab = 'aktif';
@@ -416,7 +419,7 @@
     const k = kitMeta(t);
     const kepala = Array.isArray(t.kepala) ? t.kepala : [];
     const files = fileEntries(t);
-    const wa = waLink(t.kontakWA);
+    const wa = previewReadOnly ? '' : waLink(t.kontakWA);
     $('#previewTitle').textContent = t.namaTim || 'Preview Kit';
     $('#previewSub').innerHTML =
       esc(jenisLabel(t.jenisInstansi)) + ' · ' + esc(t.namaInstansi) + '<br>' +
@@ -454,12 +457,13 @@
             '<div><dt>Instansi</dt><dd>' + esc(t.namaInstansi) + '</dd></div>' +
             '<div><dt>Nama tim</dt><dd>' + esc(t.namaTim) + '</dd></div>' +
             '<div><dt>Kategori</dt><dd>' + kategoriBadge(t) +
-              ' <label class="kode-inline" style="display:inline-flex;gap:6px;align-items:center;margin-left:8px;font-size:.8rem">Ubah ' +
+              (previewReadOnly ? '' :
+              (' <label class="kode-inline" style="display:inline-flex;gap:6px;align-items:center;margin-left:8px;font-size:.8rem">Ubah ' +
               '<select data-admin-kategori style="font:inherit;border-radius:8px;padding:4px 8px;border:1px solid var(--line)">' +
                 '<option value="">—</option>' +
                 '<option value="Putra"' + (normalizeKategori(t.kategoriTim)==='Putra'?' selected':'') + '>Putra</option>' +
                 '<option value="Putri"' + (normalizeKategori(t.kategoriTim)==='Putri'?' selected':'') + '>Putri</option>' +
-              '</select></label></dd></div>' +
+              '</select></label>')) + '</dd></div>' +
             (t.timGabungan ? '<div><dt>Tim gabungan</dt><dd>' + esc(t.anggotaFaskes || 'ya') + '</dd></div>' : '') +
             '<div><dt>Kapten</dt><dd>' + esc(t.namaKapten) + '</dd></div>' +
             '<div><dt>Warna jersey</dt><dd>' + esc(t.warnaJersey || '—') + '</dd></div>' +
@@ -472,12 +476,13 @@
           editHistoryHtml(t) +
         '</section>' +
         '<section class="form-card">' +
-          '<h3 style="margin-top:0;color:var(--navy)">Kontak</h3>' +
-          '<p style="margin:0">' + esc(t.kontakNama || '—') +
-          (t.kontakWA ? (' · ' + (wa ? '<a href="' + esc(wa) + '" target="_blank" rel="noopener">' + esc(t.kontakWA) + '</a>' : esc(t.kontakWA))) : '') +
-          '</p>' +
-          (t.folderUrl ? '<p style="margin:10px 0 0"><a href="' + esc(t.folderUrl) + '" target="_blank" rel="noopener">📁 Buka folder Drive tim</a></p>' : '') +
-          '<h3 style="color:var(--navy)">Kepala / Pimpinan</h3>' +
+          (previewReadOnly ? '' :
+            ('<h3 style="margin-top:0;color:var(--navy)">Kontak</h3>' +
+            '<p style="margin:0">' + esc(t.kontakNama || '—') +
+            (t.kontakWA ? (' · ' + (wa ? '<a href="' + esc(wa) + '" target="_blank" rel="noopener">' + esc(t.kontakWA) + '</a>' : esc(t.kontakWA))) : '') +
+            '</p>' +
+            (t.folderUrl ? '<p style="margin:10px 0 0"><a href="' + esc(t.folderUrl) + '" target="_blank" rel="noopener">📁 Buka folder Drive tim</a></p>' : ''))) +
+          '<h3 style="color:var(--navy)' + (previewReadOnly ? ';margin-top:0' : '') + '">Kepala / Pimpinan</h3>' +
           '<div class="preview-kepala">' + kepalaHtml + '</div>' +
         '</section>' +
       '</div>' +
@@ -665,26 +670,113 @@
   }
 
   function setAdminTab(tab) {
-    adminTab = tab === 'arsip' ? 'arsip' : 'aktif';
+    adminTab = tab === 'arsip' ? 'arsip' : (tab === 'kontrol' ? 'kontrol' : 'aktif');
     const aktif = $('#adminList');
     const arsip = $('#arsipList');
+    const kontrol = $('#kontrolPanel');
+    const filters = $('#adminFilters');
     const tabA = $('#tabAktif');
     const tabR = $('#tabArsip');
+    const tabK = $('#tabKontrol');
     if (aktif) aktif.hidden = adminTab !== 'aktif';
     if (arsip) arsip.hidden = adminTab !== 'arsip';
-    if (tabA) {
-      tabA.className = adminTab === 'aktif' ? 'btn btn-navy' : 'btn btn-outline';
-      tabA.setAttribute('aria-selected', adminTab === 'aktif' ? 'true' : 'false');
-    }
-    if (tabR) {
-      tabR.className = adminTab === 'arsip' ? 'btn btn-navy' : 'btn btn-outline';
-      tabR.setAttribute('aria-selected', adminTab === 'arsip' ? 'true' : 'false');
-    }
+    if (kontrol) kontrol.hidden = adminTab !== 'kontrol';
+    if (filters) filters.hidden = adminTab === 'kontrol';
+    [[tabA, 'aktif'], [tabR, 'arsip'], [tabK, 'kontrol']].forEach(([el, name]) => {
+      if (!el) return;
+      const on = adminTab === name;
+      el.className = on ? 'btn btn-navy' : 'btn btn-outline';
+      el.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
     if (adminTab === 'arsip') loadArsip();
+    else if (adminTab === 'kontrol') renderKontrol();
     else render();
   }
 
-  async function openPreview(id) {
+  function kontrolFilters() {
+    return {
+      gender: ($('#kGender') && $('#kGender').value) || '',
+      status: ($('#kStatus') && $('#kStatus').value) || '',
+      q: ($('#kSearch') && $('#kSearch').value) || ''
+    };
+  }
+
+  function currentKontrolModel() {
+    if (!window.FutsalKitKontrol || !window.FutsalScheduleRoster) {
+      return {
+        ok: false,
+        loadState: 'error',
+        errorMessage: 'Modul kontrol jadwal belum dimuat.',
+        counts: null,
+        rows: [],
+        allRows: []
+      };
+    }
+    return window.FutsalKitKontrol.assess(teams, {
+      roster: window.FutsalScheduleRoster,
+      loadState: kitLoadState === 'idle' ? 'loading' : kitLoadState,
+      errorMessage: kitLoadError,
+      filters: kontrolFilters(),
+      contoh: FutsalAPI.isDemo(),
+      now: new Date()
+    });
+  }
+
+  function setKontrolMsg(kind, text) {
+    const el = $('#kontrolMsg');
+    if (!el) return;
+    if (!text) { el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false;
+    el.className = kind === 'err' ? 'alert alert-err' : 'alert alert-ok';
+    el.textContent = text;
+  }
+
+  function renderKontrol() {
+    const body = $('#kontrolBody');
+    if (!body || !window.FutsalKitKontrol) return;
+    const model = currentKontrolModel();
+    body.innerHTML = window.FutsalKitKontrol.renderKontrol(model);
+    const pdfFilter = $('#btnLaporanPdfFilter');
+    if (pdfFilter) pdfFilter.hidden = !(model.ok && model.filtersActive);
+    body.querySelectorAll('[data-kontrol-preview]').forEach(btn => {
+      btn.onclick = () => openPreview(btn.getAttribute('data-kontrol-preview'), { readOnly: true });
+    });
+  }
+
+  function savePdfBlob(doc, filename) {
+    const bytes = doc.output('arraybuffer');
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    triggerDownload(blob, filename);
+  }
+
+  function downloadLaporanPdf(scope) {
+    if (!window.FutsalKitKontrol || !window.FutsalLaporanKelengkapanPdf) {
+      throw new Error('Modul laporan kelengkapan belum dimuat.');
+    }
+    const model = currentKontrolModel();
+    const slice = window.FutsalKitKontrol.sliceForPdf(model, scope === 'filter' ? 'filter' : 'penuh');
+    const result = window.FutsalLaporanKelengkapanPdf.generate({ model: slice });
+    savePdfBlob(result.doc, result.filename);
+    const c = result.counts || {};
+    setKontrolMsg('ok', 'PDF laporan diunduh: ' + result.filename + ' · ' + result.pages + ' halaman · diharapkan ' + (c.diharapkan != null ? c.diharapkan : '—') + '. Bukan majalah kit.');
+  }
+
+  function setPreviewChrome(readOnly) {
+    ['btnPreviewVerify', 'btnPreviewReject', 'btnPreviewPending', 'btnPreviewEdit', 'btnPreviewHapus', 'btnPreviewZip'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.hidden = !!readOnly;
+    });
+    const note = document.getElementById('previewNote');
+    if (note) {
+      note.hidden = !!readOnly;
+      const label = note.closest ? note.closest('label') : null;
+      if (label) label.hidden = !!readOnly;
+    }
+  }
+
+  async function openPreview(id, opts) {
+    previewReadOnly = !!(opts && opts.readOnly);
+    setPreviewChrome(previewReadOnly);
     let t = teams.find(x => x.id === id);
     try {
       if (!FutsalAPI.isDemo()) {
@@ -700,9 +792,15 @@
       }
     } catch (e) {
       alert(e.message);
+      previewReadOnly = false;
+      setPreviewChrome(false);
       return;
     }
-    if (!t) return;
+    if (!t) {
+      previewReadOnly = false;
+      setPreviewChrome(false);
+      return;
+    }
     previewTeam = t;
     $('#previewNote').value = t.catatanAdmin || '';
     renderPreviewBody(t);
@@ -742,6 +840,8 @@
     $('#previewModal').hidden = true;
     document.body.classList.remove('modal-open');
     previewTeam = null;
+    previewReadOnly = false;
+    setPreviewChrome(false);
   }
 
   function openLightbox(ctx) {
@@ -872,13 +972,21 @@
   }
 
   async function refresh() {
+    kitLoadState = 'loading';
+    kitLoadError = '';
+    if (adminTab === 'kontrol') renderKontrol();
     try {
       const res = await FutsalAPI.post('adminList', { token });
       teams = (res.teams || []).map(t => t._contoh ? enrichDemoAdmin(t) : t);
       if (FutsalAPI.isDemo()) teams = teams.map(enrichDemoAdmin);
+      kitLoadState = 'ready';
       render();
+      renderKontrol();
     } catch (err) {
-      showAdminError(err.message || String(err));
+      kitLoadState = 'error';
+      kitLoadError = (err && err.message) || String(err);
+      showAdminError(kitLoadError);
+      renderKontrol();
       throw err;
     }
   }
@@ -1329,7 +1437,7 @@
   function boot() {
     if (FutsalAPI.isDemo()) $('#demoBanner').hidden = false;
     const v = $('#adminVersi');
-    if (v) v.textContent = (C && C.VERSI) || '1.0.17';
+    if (v) v.textContent = (C && C.VERSI) || '1.0.18';
 
     $$('[data-close-preview]').forEach(el => el.addEventListener('click', closePreview));
     $('#lightboxClose').onclick = closeLightbox;
@@ -1342,25 +1450,25 @@
     });
 
     $('#btnPreviewVerify').onclick = FutsalAPI.withBusy($('#btnPreviewVerify'), async () => {
-      if (!previewTeam) return;
+      if (!previewTeam || previewReadOnly) return;
       await setStatus(previewTeam.id, 'verified', $('#previewNote').value);
     });
     $('#btnPreviewReject').onclick = FutsalAPI.withBusy($('#btnPreviewReject'), async () => {
-      if (!previewTeam) return;
+      if (!previewTeam || previewReadOnly) return;
       await setStatus(previewTeam.id, 'rejected', $('#previewNote').value);
     });
     $('#btnPreviewPending').onclick = FutsalAPI.withBusy($('#btnPreviewPending'), async () => {
-      if (!previewTeam) return;
+      if (!previewTeam || previewReadOnly) return;
       await setStatus(previewTeam.id, 'pending', $('#previewNote').value);
     });
     $('#btnPreviewZip').onclick = FutsalAPI.withBusy($('#btnPreviewZip'), async () => {
-      if (!previewTeam) return;
+      if (!previewTeam || previewReadOnly) return;
       await downloadTeamZip(previewTeam, $('#btnPreviewZip'));
     });
     const btnPreviewEdit = $('#btnPreviewEdit');
     if (btnPreviewEdit) {
       btnPreviewEdit.onclick = () => {
-        if (!previewTeam) return;
+        if (!previewTeam || previewReadOnly) return;
         openEditModal(previewTeam.id);
       };
     }
@@ -1378,7 +1486,7 @@
     const btnPrevHapus = $('#btnPreviewHapus');
     if (btnPrevHapus) {
       btnPrevHapus.onclick = () => {
-        if (!previewTeam) return;
+        if (!previewTeam || previewReadOnly) return;
         openHapusModal(previewTeam.id);
       };
     }
@@ -1391,6 +1499,8 @@
     const tabArsip = $('#tabArsip');
     if (tabAktif) tabAktif.onclick = () => setAdminTab('aktif');
     if (tabArsip) tabArsip.onclick = () => setAdminTab('arsip');
+    const tabKontrol = $('#tabKontrol');
+    if (tabKontrol) tabKontrol.onclick = () => setAdminTab('kontrol');
 
     if (token) {
       showPanel(true);
@@ -1477,6 +1587,37 @@
 
     ['fStatus', 'fJenis', 'fKit', 'fKategori'].forEach(id => { const el = $('#' + id); if (el) el.onchange = render; });
     $('#fSearch').oninput = render;
+    ['kGender', 'kStatus'].forEach(id => { const el = $('#' + id); if (el) el.onchange = renderKontrol; });
+    const kSearch = $('#kSearch');
+    if (kSearch) kSearch.oninput = renderKontrol;
+    const btnLaporan = $('#btnLaporanPdf');
+    if (btnLaporan) {
+      btnLaporan.onclick = FutsalAPI.withBusy(btnLaporan, async () => {
+        try { downloadLaporanPdf('penuh'); }
+        catch (e) { setKontrolMsg('err', (e && e.message) || 'Gagal membuat PDF laporan.'); throw e; }
+      });
+    }
+    const btnLaporanFilter = $('#btnLaporanPdfFilter');
+    if (btnLaporanFilter) {
+      btnLaporanFilter.onclick = FutsalAPI.withBusy(btnLaporanFilter, async () => {
+        try { downloadLaporanPdf('filter'); }
+        catch (e) { setKontrolMsg('err', (e && e.message) || 'Gagal membuat PDF laporan.'); throw e; }
+      });
+    }
+    const btnKontrolCsv = $('#btnKontrolCsv');
+    if (btnKontrolCsv) {
+      btnKontrolCsv.onclick = FutsalAPI.withBusy(btnKontrolCsv, async () => {
+        try {
+          const model = currentKontrolModel();
+          const csv = window.FutsalKitKontrol.toCsv(model, 'penuh');
+          triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'kontrol-kit-sesuai-jadwal.csv');
+          setKontrolMsg('ok', 'CSV kontrol seluruh roster diunduh.');
+        } catch (e) {
+          setKontrolMsg('err', (e && e.message) || 'Gagal membuat CSV.');
+          throw e;
+        }
+      });
+    }
     $('#pinInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') $('#btnLogin').click();
     });
